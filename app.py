@@ -1,13 +1,16 @@
 from flask import Flask, request, render_template, redirect, url_for, session
 from pymongo import MongoClient 
+import secrets
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key'  # Set a secret key for session management
+app.secret_key = secrets.token_hex(24)  # Generating a random secret key for session management
 
 # MongoDB setup
 client = MongoClient('mongodb+srv://soorajbinary:1rkptm6BRGpFMTVs@cluster0.povmgmh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 db = client['demo']
 users_collection = db['users']
+posts_collection = db['posts']
+
 
 # Existing routes
 @app.route('/') 
@@ -42,10 +45,19 @@ def login():
     return render_template('login.html')
 
 # Dashboard route
-@app.route('/dashboard')
+@app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
-    # Render dashboard template
-    return render_template('dashboard.html')
+    if 'username' in session:
+        if request.method == 'POST':
+            post_content = request.form['post_content']
+            author = session['username']
+            # Insert the post into the database
+            posts_collection.insert_one({'author': author, 'content': post_content})
+            return redirect(url_for('dashboard'))  # Redirect to refresh the page after submitting the post
+        return render_template('dashboard.html')
+    else:
+        return redirect(url_for('login'))
+
 
 # User profile route
 @app.route('/profile')
@@ -54,12 +66,21 @@ def profile():
         # Get user details from the database based on the logged-in user
         user_details = users_collection.find_one({'username': session['username']})
         if user_details:
-            # Render user profile template with user details
-            return render_template('profile.html', user=user_details)
+            # Get posts by the user
+            user_posts = posts_collection.find({'author': session['username']})
+            return render_template('profile.html', user=user_details, posts=user_posts)
         else:
             return 'User not found!'
     else:
-        return redirect(url_for('login'))  # Redirect to login if user is not logged in
+        return redirect(url_for('login'))
+
+# View all posts route
+@app.route('/view_posts')
+def view_posts():
+    # Fetch all posts from the database
+    all_posts = posts_collection.find()
+    return render_template('view_posts.html', posts=all_posts)
+
 
 if __name__ == '__main__': 
     app.run()
