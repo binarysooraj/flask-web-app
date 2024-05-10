@@ -1,86 +1,144 @@
-from flask import Flask, request, render_template, redirect, url_for, session
-from pymongo import MongoClient 
-import secrets
+from flask import Flask, render_template, request, redirect, url_for, jsonify, session
+from pymongo import MongoClient
+from flask_bcrypt import Bcrypt
+from flask_jwt_extended import JWTManager, create_access_token
+import uuid
 
 app = Flask(__name__)
-app.secret_key = secrets.token_hex(24)  # Generating a random secret key for session management
+app.config['JWT_SECRET_KEY'] = 'your_secret_key'  # Change this to your preferred secret key
+jwt = JWTManager(app)
+bcrypt = Bcrypt(app)
+app.secret_key = 'your_secret_key'  # Change this to your preferred secret key
 
-# MongoDB setup
+# MongoDB connection
 client = MongoClient('mongodb+srv://soorajbinary:1rkptm6BRGpFMTVs@cluster0.povmgmh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 db = client['demo']
 users_collection = db['users']
-posts_collection = db['posts']
 
+# Routes
+@app.route('/')
+def index():
+    return render_template('index.html')
 
-# Existing routes
-@app.route('/') 
-def hello_world(): 
-    return 'Hello, World!'
-
-# User signup route
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
+        # Get form data
+        profile_picture = request.form['profile_picture']
         username = request.form['username']
+        email = request.form['email']
+        contact = request.form['contact']
+        address = request.form['address']
         password = request.form['password']
-        if users_collection.find_one({'username': username}):
-            return 'Username already exists!'
-        users_collection.insert_one({'username': username, 'password': password})
-        session['username'] = username  # Set the 'username' in session upon successful login
-        return redirect(url_for('dashboard'))  # Redirect to dashboard after signup
+        city = request.form['city']
+        country = request.form['country']
+
+        # Simple form validation
+        if not (profile_picture and username and email and contact and address and password and city and country):
+            return "All fields are required", 400
+
+        # Check if user already exists
+        if users_collection.find_one({'email': email}):
+            return "User already exists", 400
+
+        # Hash password
+        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+
+        # Generate unique uid
+        uid = str(uuid.uuid4())
+
+        # Insert user into database
+        users_collection.insert_one({
+            'uid': uid,
+            'profile_picture': profile_picture,
+            'username': username,
+            'email': email,
+            'contact': contact,
+            'address': address,
+            'password': hashed_password,
+            'city': city,
+            'country': country,
+            'wallet': 500
+        })
+
+        return redirect(url_for('signin'))
+
     return render_template('signup.html')
 
-# User login route
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/signin', methods=['GET', 'POST'])
+def signin():
     if request.method == 'POST':
-        username = request.form['username']
+        email = request.form['email']
         password = request.form['password']
-        user = users_collection.find_one({'username': username, 'password': password})
-        if user:
-            session['username'] = username  # Set the 'username' in session upon successful login
-            return redirect(url_for('dashboard'))  # Redirect to dashboard after login
-        else:
-            return 'Invalid username or password!'
-    return render_template('login.html')
 
-# Dashboard route
+        user = users_collection.find_one({'email': email})
+
+        if user and bcrypt.check_password_hash(user['password'], password):
+            # Generate JWT token
+            access_token = create_access_token(identity=str(user['_id']))
+            # Store user details and token in session
+            session['user'] = {
+                'uid': user['uid'],
+                'profile_picture': user['profile_picture'],
+                'username': user['username'],
+                'email': user['email'],
+                'contact': user['contact'],
+                'address': user['address'],
+                'city': user['city'],
+                'country': user['country'],
+                'wallet': user['wallet'],
+                'access_token': access_token
+            }
+            return redirect(url_for('dashboard'))
+        else:
+            return "Invalid email or password", 401
+
+    return render_template('signin.html')
+
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
-    if 'username' in session:
+    # Check if user is logged in
+    if 'user' in session:
+        user = session['user']
         if request.method == 'POST':
-            post_content = request.form['post_content']
-            author = session['username']
-            # Insert the post into the database
-            posts_collection.insert_one({'author': author, 'content': post_content})
-            return redirect(url_for('dashboard'))  # Redirect to refresh the page after submitting the post
-        return render_template('dashboard.html')
+            # Create post logic
+            pass
+        return render_template('dashboard.html', user=user)
     else:
-        return redirect(url_for('login'))
+        return redirect(url_for('signin'))
+    
+    
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'user' in session:
+        user = session['user']
+        updated_user = {
+            'uid': user['uid'],
+            'profile_picture': request.form['profile_picture'],
+            'username': request.form['username'],
+            'contact': request.form['contact'],
+            'address': request.form['address'],
+            'city': request.form['city'],
+            'country': request.form['country']
+        }
+        # Update user in the database
+        users_collection.update_one({'uid': user['uid']}, {'$set': updated_user})
+        # Update user in session
+        session['user'].update(updated_user)
+        return redirect(url_for('profile'))
+    else:
+        return redirect(url_for('signin'))
 
-
-# User profile route
 @app.route('/profile')
 def profile():
-    if 'username' in session:
-        # Get user details from the database based on the logged-in user
-        user_details = users_collection.find_one({'username': session['username']})
-        if user_details:
-            # Get posts by the user
-            user_posts = posts_collection.find({'author': session['username']})
-            return render_template('profile.html', user=user_details, posts=user_posts)
-        else:
-            return 'User not found!'
+    # Check if user is logged in
+    if 'user' in session:
+        user = session['user']
+        # Fetch user's posts from the database
+        # user_posts = posts_collection.find({'user_id': user['_id']})
+        return render_template('profile.html', user=user)
     else:
-        return redirect(url_for('login'))
+        return redirect(url_for('signin'))
 
-# View all posts route
-@app.route('/view_posts')
-def view_posts():
-    # Fetch all posts from the database
-    all_posts = posts_collection.find()
-    return render_template('view_posts.html', posts=all_posts)
-
-
-if __name__ == '__main__': 
-    app.run()
+if __name__ == '__main__':
+    app.run(debug=True)
