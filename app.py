@@ -18,7 +18,32 @@ users_collection = db['users']
 # Routes
 @app.route('/')
 def index():
-    return render_template('index.html')
+    return render_template('pages-login.html')
+
+
+@app.route('/purchaseStocks')
+def purchaseStocks():
+    return render_template('tables-data.html')
+
+
+@app.route('/sellStocks')
+def sellStocks():
+    return render_template('tables-general.html')
+
+
+@app.route('/history')
+def history():
+    return render_template('history-data.html')
+
+
+@app.route('/contact')
+def contact():
+    return render_template('pages-contact.html')
+
+
+@app.route('/learn')
+def learn():
+    return render_template('learn.html')
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
@@ -63,37 +88,38 @@ def signup():
 
         return redirect(url_for('signin'))
 
-    return render_template('signup.html')
+    return render_template('pages-register.html')
 
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
+        return redirect(url_for('dashboard'))
 
-        user = users_collection.find_one({'email': email})
+        # user = users_collection.find_one({'email': email})
 
-        if user and bcrypt.check_password_hash(user['password'], password):
-            # Generate JWT token
-            access_token = create_access_token(identity=str(user['_id']))
-            # Store user details and token in session
-            session['user'] = {
-                'uid': user['uid'],
-                'profile_picture': user['profile_picture'],
-                'username': user['username'],
-                'email': user['email'],
-                'contact': user['contact'],
-                'address': user['address'],
-                'city': user['city'],
-                'country': user['country'],
-                'wallet': user['wallet'],
-                'access_token': access_token
-            }
-            return redirect(url_for('dashboard'))
-        else:
-            return "Invalid email or password", 401
+        # if user and bcrypt.check_password_hash(user['password'], password):
+        #     # Generate JWT token
+        #     access_token = create_access_token(identity=str(user['_id']))
+        #     # Store user details and token in session
+        #     session['user'] = {
+        #         'uid': user['uid'],
+        #         'profile_picture': user['profile_picture'],
+        #         'username': user['username'],
+        #         'email': user['email'],
+        #         'contact': user['contact'],
+        #         'address': user['address'],
+        #         'city': user['city'],
+        #         'country': user['country'],
+        #         'wallet': user['wallet'],
+        #         'access_token': access_token
+        #     }
+        #     return redirect(url_for('dashboard'))
+        # else:
+        #     return "Invalid email or password", 401
 
-    return render_template('signin.html')
+    return render_template('pages-login.html')
 
 @app.route('/dashboard', methods=['GET', 'POST'])
 def dashboard():
@@ -103,7 +129,7 @@ def dashboard():
         if request.method == 'POST':
             # Create post logic
             pass
-        return render_template('dashboard.html', user=user)
+        return render_template('index.html', user=user)
     else:
         return redirect(url_for('signin'))
     
@@ -132,13 +158,14 @@ def update_profile():
 @app.route('/profile')
 def profile():
     # Check if user is logged in
-    if 'user' in session:
-        user = session['user']
-        # Fetch user's posts from the database
-        # user_posts = posts_collection.find({'user_id': user['_id']})
-        return render_template('profile.html', user=user)
-    else:
-        return redirect(url_for('signin'))
+    # if 'user' in session:
+    #     user = session['user']
+    #     # Fetch user's posts from the database
+    #     # user_posts = posts_collection.find({'user_id': user['_id']})
+    # return render_template('users-profile.html', user=user)
+    return render_template('users-profile.html')
+    # else:
+    #     return redirect(url_for('signin'))
 
 if __name__ == '__main__':
     app.run(debug=True)
