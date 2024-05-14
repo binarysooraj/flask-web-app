@@ -14,49 +14,181 @@ app.secret_key = 'your_secret_key'  # Change this to your preferred secret key
 client = MongoClient('mongodb+srv://soorajbinary:1rkptm6BRGpFMTVs@cluster0.povmgmh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
 db = client['demo']
 users_collection = db['users']
+posts_collection = db['posts']
+
 
 # Routes
 @app.route('/')
 def index():
-    return render_template('pages-login.html')
-
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('index.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    
 
 @app.route('/purchaseStocks')
 def purchaseStocks():
-    return render_template('tables-data.html')
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('tables-data.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    
 
 
 @app.route('/sellStocks')
 def sellStocks():
-    return render_template('tables-general.html')
-
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('tables-general.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    
 
 @app.route('/history')
 def history():
-    return render_template('history-data.html')
-
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('history-data.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    
 
 @app.route('/contact')
 def contact():
-    return render_template('pages-contact.html')
-
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('pages-contact.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    
+    
 
 @app.route('/learn')
 def learn():
-    return render_template('learn.html')
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('learn.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    
+
+
+@app.route('/components-modal')
+def componentsModal():
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('components-modal.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    
+
+
+@app.route('/components-pagination')
+def componentsPagination():
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('pages-contact.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    return render_template('components-pagination.html')
+
+
+@app.route('/components-progress')
+def componentProgress():
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('pages-contact.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    return render_template('components-progress.html')
+
+
+@app.route('/components-spinners')
+def componentSpinners():
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('pages-contact.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+    return render_template('components-spinners.html')
+
+
+@app.route('/pages-faq')
+def faqPage():
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('pages-contact.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+
+    return render_template('pages-faq.html')
+
+
+@app.route('/pages-contact')
+def contactPage():
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('pages-contact.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+
+
+@app.route('/pages-about')
+def aboutPage():
+    if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('about-page.html', user=user)
+    else:
+            return redirect(url_for('signin'))
+
+
+
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
         # Get form data
-        profile_picture = request.form['profile_picture']
+        profile_picture = 'profile'
+        # profile_picture = request.form['profile_picture']
         username = request.form['username']
         email = request.form['email']
-        contact = request.form['contact']
-        address = request.form['address']
+        # contact = request.form['contact']
+        # address = request.form['address']
         password = request.form['password']
-        city = request.form['city']
-        country = request.form['country']
+        # city = request.form['city']
+        # country = request.form['country']
+        city = 'city'
+        country = 'country'
+        address = 'address'
+        contact = '91313123322'
 
         # Simple form validation
         if not (profile_picture and username and email and contact and address and password and city and country):
@@ -95,29 +227,31 @@ def signin():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        return redirect(url_for('dashboard'))
+        print(email +' '+ password)
+        # return redirect(url_for('dashboard'))
 
-        # user = users_collection.find_one({'email': email})
+        user = users_collection.find_one({'email': email})
+        print(user['wallet'])
 
-        # if user and bcrypt.check_password_hash(user['password'], password):
-        #     # Generate JWT token
-        #     access_token = create_access_token(identity=str(user['_id']))
-        #     # Store user details and token in session
-        #     session['user'] = {
-        #         'uid': user['uid'],
-        #         'profile_picture': user['profile_picture'],
-        #         'username': user['username'],
-        #         'email': user['email'],
-        #         'contact': user['contact'],
-        #         'address': user['address'],
-        #         'city': user['city'],
-        #         'country': user['country'],
-        #         'wallet': user['wallet'],
-        #         'access_token': access_token
-        #     }
-        #     return redirect(url_for('dashboard'))
-        # else:
-        #     return "Invalid email or password", 401
+        if user and bcrypt.check_password_hash(user['password'], password):
+            # Generate JWT token
+            access_token = create_access_token(identity=str(user['_id']))
+            # Store user details and token in session
+            session['user'] = {
+                'uid': user['uid'],
+                'profile_picture': user['profile_picture'],
+                'username': user['username'],
+                'email': user['email'],
+                'contact': user['contact'],
+                'address': user['address'],
+                'city': user['city'],
+                'country': user['country'],
+                'wallet': user['wallet'],
+                'access_token': access_token
+            }
+            return redirect(url_for('dashboard'))
+        else:
+            return "Invalid email or password", 401
 
     return render_template('pages-login.html')
 
@@ -158,14 +292,19 @@ def update_profile():
 @app.route('/profile')
 def profile():
     # Check if user is logged in
-    # if 'user' in session:
-    #     user = session['user']
-    #     # Fetch user's posts from the database
-    #     # user_posts = posts_collection.find({'user_id': user['_id']})
-    # return render_template('users-profile.html', user=user)
-    return render_template('users-profile.html')
-    # else:
-    #     return redirect(url_for('signin'))
+        if 'user' in session:
+            user = session['user']
+            # Fetch user's posts from the database
+            # user_posts = posts_collection.find({'user_id': user['_id']})
+            return render_template('users-profile.html', user=user)
+        else:
+            return redirect(url_for('signin'))
+
+@app.route('/signout')
+def signout():
+    # Clear the user session
+    session.pop('user', None)
+    return redirect(url_for('index'))  # Redirect to the index or login page
 
 if __name__ == '__main__':
     app.run(debug=True)
