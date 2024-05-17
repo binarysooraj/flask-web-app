@@ -105,7 +105,7 @@ def componentsPagination():
             user = session['user']
             # Fetch user's posts from the database
             # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('pages-contact.html', user=user)
+            return render_template('components-pagination.html', user=user)
     else:
             return redirect(url_for('signin'))
     return render_template('components-pagination.html')
@@ -117,7 +117,7 @@ def componentProgress():
             user = session['user']
             # Fetch user's posts from the database
             # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('pages-contact.html', user=user)
+            return render_template('components-progress.html', user=user)
     else:
             return redirect(url_for('signin'))
     return render_template('components-progress.html')
@@ -129,7 +129,7 @@ def componentSpinners():
             user = session['user']
             # Fetch user's posts from the database
             # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('pages-contact.html', user=user)
+            return render_template('components-spinners.html', user=user)
     else:
             return redirect(url_for('signin'))
     return render_template('components-spinners.html')
@@ -141,7 +141,7 @@ def faqPage():
             user = session['user']
             # Fetch user's posts from the database
             # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('pages-contact.html', user=user)
+            return render_template('pages-faq.html', user=user)
     else:
             return redirect(url_for('signin'))
 
@@ -372,6 +372,32 @@ def update_profile():
         return redirect(url_for('signin'))
 
 
+
+@app.route('/upload_profile_image', methods=['POST'])
+def upload_profile_image():
+    if 'user' in session:
+        user = session['user']
+        if 'profile_image' in request.files:
+            profile_image = request.files['profile_image']
+            # Save the uploaded image to your desired location
+            # Update user profile picture in session and database
+            # For example:
+            # user['profile_picture'] = 'path/to/uploaded/image.jpg'
+            # users_collection.update_one({'uid': user['uid']}, {'$set': {'profile_picture': user['profile_picture']}})
+            # session['user'] = user
+    return redirect(url_for('profile'))
+
+@app.route('/remove_profile_image', methods=['GET', 'POST'])
+def remove_profile_image():
+    if 'user' in session:
+        user = session['user']
+        # Remove the profile picture from your desired location
+        # Update user profile picture in session and database
+        # For example:
+        # user['profile_picture'] = '/static/img/default-profile-img.jpg'  # Set default image path
+        # users_collection.update_one({'uid': user['uid']}, {'$set': {'profile_picture': user['profile_picture']}})
+        # session['user'] = user
+    return redirect(url_for('profile'))
 
 
 
