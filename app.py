@@ -362,15 +362,16 @@ def update_profile():
         # Update user in the database
         users_collection.update_one({'uid': user['uid']}, {'$set': updated_fields})
 
-        # Fetch updated user from the database
-        updated_user = users_collection.find_one({'uid': user['uid']})
-
-        # Update user in session with the updated information
-        session['user'] = updated_user
+        # Update user details in the session
+        for key, value in updated_fields.items():
+            user[key] = value
+        session['user'] = user
 
         return redirect(url_for('profile'))
     else:
         return redirect(url_for('signin'))
+
+
 
 
 
