@@ -231,7 +231,6 @@ def signin():
         # return redirect(url_for('dashboard'))
 
         user = users_collection.find_one({'email': email})
-        print(user['wallet'])
 
         if user and bcrypt.check_password_hash(user['password'], password):
             # Generate JWT token
@@ -268,8 +267,8 @@ def dashboard():
         return redirect(url_for('signin'))
     
     
-@app.route('/update_profile', methods=['POST'])
-def update_profile():
+# @app.route('/update_profile', methods=['POST'])
+# def update_profile():
     if 'user' in session:
         user = session['user']
         updated_user = {
@@ -294,6 +293,8 @@ def profile():
     # Check if user is logged in
         if 'user' in session:
             user = session['user']
+            print("Inside if: "+user['country'])
+        
             # Fetch user's posts from the database
             # user_posts = posts_collection.find({'user_id': user['_id']})
             return render_template('users-profile.html', user=user)
@@ -305,6 +306,73 @@ def signout():
     # Clear the user session
     session.pop('user', None)
     return redirect(url_for('index'))  # Redirect to the index or login page
+
+
+
+@app.route('/change-password', methods=['POST'])
+def change_password():
+    if 'user' in session:
+        user = session['user']
+        current_password = request.form['currentPassword']
+        new_password = request.form['newPassword']
+        renew_password = request.form['renewPassword']
+
+        # Fetch user from the database
+        db_user = users_collection.find_one({'uid': user['uid']})
+
+        # Check if current password is correct
+        if not bcrypt.check_password_hash(db_user['password'], current_password):
+            return "Current password is incorrect", 401
+
+        # Check if new passwords match
+        if new_password != renew_password:
+            return "New passwords do not match", 400
+
+        # Hash new password
+        hashed_new_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+
+        # Update user's password in the database
+        users_collection.update_one(
+            {'uid': user['uid']},
+            {'$set': {'password': hashed_new_password}}
+        )
+
+        return redirect(url_for('profile'))
+
+    else:
+        return redirect(url_for('signin'))
+    
+@app.route('/update_profile', methods=['POST'])
+def update_profile():
+    if 'user' in session:
+        user = session['user']
+        updated_fields = {
+            'about': request.form['about'],
+            'city': request.form['city'],
+            'country': request.form['country'],
+            'address': request.form['address'],
+            'contact': request.form['phone'],
+            'email': request.form['email'],
+            'twitter': request.form['twitter'],
+            'facebook': request.form['facebook'],
+            'instagram': request.form['instagram'],
+            'linkedin': request.form['linkedin']
+        }
+
+        # Update user in the database
+        users_collection.update_one({'uid': user['uid']}, {'$set': updated_fields})
+
+        # Fetch updated user from the database
+        updated_user = users_collection.find_one({'uid': user['uid']})
+
+        # Update user in session with the updated information
+        session['user'] = updated_user
+
+        return redirect(url_for('profile'))
+    else:
+        return redirect(url_for('signin'))
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
