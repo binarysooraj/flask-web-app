@@ -1088,7 +1088,7 @@ h6 {
   margin-bottom: 0;
 }
 
-.contact .php-email-form .error-message {
+.post-form .error-message {
   display: none;
   color: #fff;
   background: #ed3c0d;
@@ -1098,7 +1098,7 @@ h6 {
   font-weight: 600;
 }
 
-.contact .php-email-form .sent-message {
+.post-form .sent-message {
   display: none;
   color: #fff;
   background: #18d26e;
@@ -1108,7 +1108,7 @@ h6 {
   font-weight: 600;
 }
 
-.contact .php-email-form .loading {
+.post-form .loading {
   display: none;
   background: #fff;
   text-align: center;
@@ -1116,7 +1116,7 @@ h6 {
   margin-bottom: 24px;
 }
 
-.contact .php-email-form .loading:before {
+.post-form .loading:before {
   content: "";
   display: inline-block;
   border-radius: 50%;
@@ -1128,28 +1128,28 @@ h6 {
   animation: animate-loading 1s linear infinite;
 }
 
-.contact .php-email-form input,
-.contact .php-email-form textarea {
+post-form input,
+post-form textarea {
   border-radius: 0;
   box-shadow: none;
   font-size: 14px;
   border-radius: 0;
 }
 
-.contact .php-email-form input:focus,
-.contact .php-email-form textarea:focus {
+post-form input:focus,
+post-form textarea:focus {
   border-color: #4154f1;
 }
 
-.contact .php-email-form input {
+post-form input {
   padding: 10px 15px;
 }
 
-.contact .php-email-form textarea {
+post-form textarea {
   padding: 12px 15px;
 }
 
-.contact .php-email-form button[type=submit] {
+post-form button[type=submit] {
   background: #4154f1;
   border: 0;
   padding: 10px 30px;
@@ -1158,7 +1158,7 @@ h6 {
   border-radius: 4px;
 }
 
-.contact .php-email-form button[type=submit]:hover {
+post-form button[type=submit]:hover {
   background: #5969f3;
 }
 

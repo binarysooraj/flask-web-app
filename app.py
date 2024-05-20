@@ -3,6 +3,12 @@ from pymongo import MongoClient
 from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager, create_access_token
 import uuid
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from flask_mail import Mail, Message
+
+
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'your_secret_key'  # Change this to your preferred secret key
@@ -16,6 +22,13 @@ db = client['demo']
 users_collection = db['users']
 posts_collection = db['posts']
 
+app.config['MAIL_SERVER']= 'live.smtp.mailtrap.io'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USERNAME'] = 'api'
+app.config['MAIL_PASSWORD'] = 'bade8f2c6fea75faf8fe2a32846718bb'
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USE_SSL'] = False
+mail = Mail(app)
 
 # Routes
 @app.route('/')
@@ -134,18 +147,31 @@ def componentSpinners():
             return redirect(url_for('signin'))
     return render_template('components-spinners.html')
 
+posts = []
 
-@app.route('/pages-faq')
-def faqPage():
-    if 'user' in session:
-            user = session['user']
-            # Fetch user's posts from the database
-            # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('pages-faq.html', user=user)
+
+
+# Endpoint to handle form submission
+@app.route('/create-post', methods=['POST'])
+def create_post():
+    # Get data from the form
+    post_title = request.form['postTitle']
+    post_content = request.form['postContent']
+    
+    # Create a new post document
+    post = {
+        'title': post_title,
+        'content': post_content
+    }
+    
+    # Insert the post document into the MongoDB collection
+    result = posts_collection.insert_one(post)
+    
+    # Check if insertion was successful
+    if result.inserted_id:
+        return 'OK'
     else:
-            return redirect(url_for('signin'))
-
-    return render_template('pages-faq.html')
+        return 'error Failed to create post' # HTTP status code 500: Internal Server Error
 
 
 @app.route('/pages-contact')
@@ -227,8 +253,6 @@ def signin():
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
-        print(email +' '+ password)
-        # return redirect(url_for('dashboard'))
 
         user = users_collection.find_one({'email': email})
 
@@ -373,33 +397,80 @@ def update_profile():
 
 
 
-@app.route('/upload_profile_image', methods=['POST'])
+
+
+
+@app.route('/send_email', methods=['POST'])
+def send_email():
+    if request.method == 'POST':
+        name = request.form['name']
+        email = request.form['email']
+        subject = request.form['subject']
+        message = request.form['message']
+
+        # Set up SMTP connection
+        smtp_server = 'live.smtp.mailtrap.io'
+        smtp_port = 587  # Change to the appropriate port for your SMTP server
+        sender_email = 'soorajbinary@demomailtrap.com'
+        sender_password = 'bade8f2c6fea75faf8fe2a32846718bb'
+        recipients = [email]
+        # Create message
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = email
+        msg['Subject'] = subject
+
+        # Creating the message
+        msg = Message(name,
+                        sender="soorajbinary@demomailtrap.com",
+                        recipients=recipients)
+        msg.body = message
+
+        # Sending the email
+        mail.send(msg)
+
+        return "OK"
+
+# Endpoint to fetch all posts
+@app.route('/pages-faq', methods=['GET'])
+def get_posts():
+    # Retrieve all posts from the MongoDB collection
+    posts = list(posts_collection.find({}, {'_id': 0}))  # Exclude _id field from the response
+    
+    if 'user' in session:
+            user = session['user']
+            # Check if there are any posts
+            if posts:
+                return render_template('pages-faq.html', user=user, posts=posts)
+            else:
+                return render_template('pages-faq.html', user=user, posts=[])
+    else:
+            return redirect(url_for('signin'))        
+
+# Function to handle uploading of profile image
+@app.route('/upload-profile-image', methods=['POST'])
 def upload_profile_image():
-    if 'user' in session:
-        user = session['user']
-        if 'profile_image' in request.files:
-            profile_image = request.files['profile_image']
-            # Save the uploaded image to your desired location
-            # Update user profile picture in session and database
-            # For example:
-            # user['profile_picture'] = 'path/to/uploaded/image.jpg'
-            # users_collection.update_one({'uid': user['uid']}, {'$set': {'profile_picture': user['profile_picture']}})
-            # session['user'] = user
-    return redirect(url_for('profile'))
+    if 'file' not in request.files:
+        return 'No file part'
+    
+    file = request.files['file']
+    
+    if file.filename == '':
+        return 'No selected file'
+    
+    if file:
+        filename = secure_filename(file.filename)
+        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+        return 'Profile image uploaded successfully'
+    else:
+        return 'Failed to upload profile image'
 
-@app.route('/remove_profile_image', methods=['GET', 'POST'])
+# Function to handle removal of profile image
+@app.route('/remove-profile-image')
 def remove_profile_image():
-    if 'user' in session:
-        user = session['user']
-        # Remove the profile picture from your desired location
-        # Update user profile picture in session and database
-        # For example:
-        # user['profile_picture'] = '/static/img/default-profile-img.jpg'  # Set default image path
-        # users_collection.update_one({'uid': user['uid']}, {'$set': {'profile_picture': user['profile_picture']}})
-        # session['user'] = user
-    return redirect(url_for('profile'))
-
-
+    # Add your logic here to remove the profile image
+    # For example, you can delete the file from the filesystem
+    return 'Profile image removed successfully'
 
 if __name__ == '__main__':
     app.run(debug=True)
