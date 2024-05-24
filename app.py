@@ -7,8 +7,9 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from flask_mail import Mail, Message
-
-
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'your_secret_key'  # Change this to your preferred secret key
@@ -233,7 +234,7 @@ def signup():
         # Insert user into database
         users_collection.insert_one({
             'uid': uid,
-            'profile_picture': profile_picture,
+            'image_url': '',
             'username': username,
             'email': email,
             'contact': contact,
@@ -262,7 +263,7 @@ def signin():
             # Store user details and token in session
             session['user'] = {
                 'uid': user['uid'],
-                'profile_picture': user['profile_picture'],
+                'image_url': user['image_url'],
                 'username': user['username'],
                 'email': user['email'],
                 'contact': user['contact'],
@@ -290,35 +291,12 @@ def dashboard():
     else:
         return redirect(url_for('signin'))
     
-    
-# @app.route('/update_profile', methods=['POST'])
-# def update_profile():
-    if 'user' in session:
-        user = session['user']
-        updated_user = {
-            'uid': user['uid'],
-            'profile_picture': request.form['profile_picture'],
-            'username': request.form['username'],
-            'contact': request.form['contact'],
-            'address': request.form['address'],
-            'city': request.form['city'],
-            'country': request.form['country']
-        }
-        # Update user in the database
-        users_collection.update_one({'uid': user['uid']}, {'$set': updated_user})
-        # Update user in session
-        session['user'].update(updated_user)
-        return redirect(url_for('profile'))
-    else:
-        return redirect(url_for('signin'))
 
 @app.route('/profile')
 def profile():
     # Check if user is logged in
         if 'user' in session:
-            user = session['user']
-            print("Inside if: "+user['country'])
-        
+            user = session['user']        
             # Fetch user's posts from the database
             # user_posts = posts_collection.find({'user_id': user['_id']})
             return render_template('users-profile.html', user=user)
@@ -365,12 +343,20 @@ def change_password():
 
     else:
         return redirect(url_for('signin'))
-    
+
+
+
 @app.route('/update_profile', methods=['POST'])
 def update_profile():
     if 'user' in session:
+        image_url = ''
+        file = request.files['file']
+        if file:
+            upload_result = cloudinary.uploader.upload(file)
+            image_url = upload_result.get('url')
         user = session['user']
-        updated_fields = {
+        updated_fields = {  
+            'image_url': image_url,
             'about': request.form['about'],
             'city': request.form['city'],
             'country': request.form['country'],
@@ -447,30 +433,15 @@ def get_posts():
     else:
             return redirect(url_for('signin'))        
 
-# Function to handle uploading of profile image
-@app.route('/upload-profile-image', methods=['POST'])
-def upload_profile_image():
-    if 'file' not in request.files:
-        return 'No file part'
-    
-    file = request.files['file']
-    
-    if file.filename == '':
-        return 'No selected file'
-    
-    if file:
-        filename = secure_filename(file.filename)
-        file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
-        return 'Profile image uploaded successfully'
-    else:
-        return 'Failed to upload profile image'
 
-# Function to handle removal of profile image
-@app.route('/remove-profile-image')
-def remove_profile_image():
-    # Add your logic here to remove the profile image
-    # For example, you can delete the file from the filesystem
-    return 'Profile image removed successfully'
+# Configure Cloudinary credentials
+cloudinary.config(
+    cloud_name='daxa9xef8',
+    api_key='553891686579191',
+    api_secret='cmfGWd0Nkvw0rdGIA5JXPLW1ps0'
+)
+
+
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
