@@ -407,7 +407,7 @@
                         <td>Curicó</td>
                         <td>2005/02/11</td>
                         <td>37%</td>
-                        <td><a href="#" class="btn btn-primary btn-sm buy-btn">Buy</a> <a href="#" class="btn btn-warning btn-sm buy-btn">Predict</a></td> <!-- Added Buy button with class "buy-btn" -->
+                        <td><a href="#" class="btn btn-primary btn-sm buy-btn">Buy</a> <a href="#" onclick="fetchPrediction()" class="btn btn-warning btn-sm buy-btn">Predict</a></td> <!-- Added Buy button with class "buy-btn" -->
                     </tr>
                     <tr>
                         <td>Theodore Duran</td>
@@ -709,11 +709,35 @@
 
   <!-- Script to trigger modal on Buy button click -->
   <script>
+
     $(document).ready(function () {
       $(".buy-btn").click(function () {
         $("#basicModal").modal("show");
       });
     });
+
+    async function fetchPrediction() {
+      try {
+        const response = await fetch('/predict', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          throw new Error('Network response was not ok ' + response.statusText);
+        }
+
+        const data = await response.json();
+        console.log(data.predictions);  // Handle the data returned from the Flask endpoint
+        console.log(data.predictions[0])
+        alert('Prediction: ' + data.predictions);  // Example of using the data
+      } catch (error) {
+        console.error('There was a problem with the fetch operation:', error);
+      }
+    }
+    
   </script>
 
 </body>

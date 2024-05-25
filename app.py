@@ -10,6 +10,9 @@ from flask_mail import Mail, Message
 import cloudinary
 import cloudinary.uploader
 import cloudinary.api
+import certifi
+from predict import forecast
+from datetime import date
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'your_secret_key'  # Change this to your preferred secret key
@@ -18,7 +21,12 @@ bcrypt = Bcrypt(app)
 app.secret_key = 'your_secret_key'  # Change this to your preferred secret key
 
 # MongoDB connection
-client = MongoClient('mongodb+srv://soorajbinary:1rkptm6BRGpFMTVs@cluster0.povmgmh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0')
+client = MongoClient(
+    'mongodb+srv://soorajbinary:1rkptm6BRGpFMTVs@cluster0.povmgmh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+    tlsCAFile=certifi.where()
+)
+
+
 db = client['demo']
 users_collection = db['users']
 posts_collection = db['posts']
@@ -65,6 +73,24 @@ def sellStocks():
     else:
             return redirect(url_for('signin'))
     
+
+@app.route('/predict')
+def predict():
+    today = date.today()
+    print("Today's date:", today)
+    predictions = forecast(today)
+    predictions =  predictions.tolist()
+    print('predictions: ', predictions[0])
+    return jsonify(predictions=predictions)
+
+
+@app.route('/calculate_risk')
+def calculate_risk():
+    current_price=12
+    purchase_price = 10
+    risk = current_price - purchase_price
+    return jsonify(risk=risk)
+
 
 @app.route('/history')
 def history():
@@ -263,7 +289,6 @@ def signin():
             # Store user details and token in session
             session['user'] = {
                 'uid': user['uid'],
-                'image_url': user['image_url'],
                 'username': user['username'],
                 'email': user['email'],
                 'contact': user['contact'],
