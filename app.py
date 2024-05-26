@@ -13,6 +13,8 @@ import cloudinary.api
 import certifi
 from predict import forecast
 from datetime import date
+import json
+
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'your_secret_key'  # Change this to your preferred secret key
@@ -62,6 +64,21 @@ def purchaseStocks():
             return redirect(url_for('signin'))
     
 
+@app.route('/stocks_data')
+def getStocksData():
+    # Open and read the JSON file correctly
+    with open('model_files/51_stocks_data.json', 'r') as file:
+        data = json.load(file)  # Use json.load to read from a file
+
+    last_date = sorted(data.keys(), reverse=True)[0]
+    last_date_values = data[last_date]
+
+    # Prepare the stocks data
+    for key, value in last_date_values.items():
+        stocks.append(value)
+
+    return jsonify(stocks=stocks)
+
 
 @app.route('/sellStocks')
 def sellStocks():
@@ -86,10 +103,31 @@ def predict():
 
 @app.route('/calculate_risk')
 def calculate_risk():
-    current_price=12
-    purchase_price = 10
-    risk = current_price - purchase_price
-    return jsonify(risk=risk)
+
+    today = date.today()
+    print("Today's date:", today)
+    current_prices = forecast(today)
+    current_prices =  current_prices.tolist()[0]
+    print('current_prices: ', current_prices[0])
+    # current_price=12
+    # purchase_price = 10
+
+    purchase_prices = [165.0, 144.5699920654297, 131.40000915527344, 344.47003173828125, 367.75, 475.6900634765625, 142.0500030517578, 468.5000305175781, 29.85000228881836, 135.32000732421875, 462.83001708984375, 56.130001068115234, 46.790000915527344, 102.45999908447266, 159.1599884033203, 251.12001037597656, 148.52000427246094, 57.57999801635742, 62.56999588012695, 132.55999755859375, 68.04999542236328, 257.9800109863281, 418.7699890136719, 89.29000091552734, 31.73000144958496, 46.439998626708984, 167.08999633789062, 51.11000061035156, 376.9100036621094, 83.9000015258789, 16.09000015258789, 37.30999755859375, 156.8300018310547, 37.869998931884766, 96.80000305175781, 141.8199920654297, 106.93000030517578, 25.260000228881836, 107.6300048828125, 144.4499969482422, 439.20001220703125, 145.72999572753906, 58.060001373291016, 162.0399932861328, 265.42999267578125, 58.6099967956543, 331.969970703125, 644.6900024414062, 137.39999389648438, 88.83999633789062, 72.5]
+    print('purchase_prices: ', purchase_prices)
+
+    risk_list = []
+    
+    for i in range(0, len(purchase_prices)):
+
+        print('\n\n')
+        print('Current price: ', current_prices[i])
+        print('Purchase_proce:', purchase_prices[i])
+
+        risk = current_prices[i] - (purchase_prices[i])
+
+        risk_list.append(risk)
+
+    return jsonify(risk_list=risk_list)
 
 
 @app.route('/history')
