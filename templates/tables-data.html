@@ -313,7 +313,7 @@
         </a>
         <ul id="tables-nav" class="nav-content collapse show" data-bs-parent="#sidebar-nav">
           <li>
-            <a href="/sellStocks">
+            <a href="/stocks_data">
               <i class="bi bi-circle"></i><span>Sell</span>
             </a>
           </li>
@@ -392,22 +392,19 @@
                 <table class="table datatable">
                   <thead id="table-header">
                       <tr>
+                        <th>Symbol</th>
                         <th>Open</th>
                         <th>High</th>
                         <th>Low</th>
                         <th>Close</th>
                         <th>Volume</th>
+                        <th>Date</th>
+                        <th>Action</th>
+
                       </tr>
                   </thead>
-                  <tbody id="stocks-tbody">
-                    <tr>
-                      <td>Unity Pugh</td>
-                      <td>9958</td>
-                      <td>Curicó</td>
-                      <td>2005/02/11</td>
-                      <td>37%</td>
-                      <td><a href="#" class="btn btn-primary btn-sm buy-btn">Buy</a> <a href="#" onclick="fetchPrediction()" class="btn btn-warning btn-sm buy-btn">Predict</a></td> <!-- Added Buy button with class "buy-btn" -->
-                  </tr>
+                  <tbody>
+                   
                   </tbody>
                 </table>
               
@@ -438,18 +435,7 @@
 
   <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
 
-  <!-- Vendor JS Files -->
-  <script src="/static/vendor/apexcharts/apexcharts.min.js"></script>
-  <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
-  <script src="/static/vendor/chart.js/chart.umd.js"></script>
-  <script src="/static/vendor/echarts/echarts.min.js"></script>
-  <script src="/static/vendor/quill/quill.js"></script>
-  <script src="/static/vendor/simple-datatables/simple-datatables.js"></script>
-  <script src="/static/vendor/tinymce/tinymce.min.js"></script>
-  <script src="/static/vendor/php-email-form/validate.js"></script>
 
-  <!-- Template Main JS File -->
-  <script src="/static/js/main.js"></script>
 
 
 
@@ -486,16 +472,37 @@
   <script src="https://stackpath.bootstrapcdn.com/bootstrap/5.1.3/js/bootstrap.bundle.min.js"></script>
   <!-- jQuery -->
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
-
-  <!-- Script to trigger modal on Buy button click -->
   <script>
-
-    $(document).ready(function () {
-      $(".buy-btn").click(function () {
-        $("#basicModal").modal("show");
+    const mystocks = {{ stocks | tojson }};
+  
+    // Function to generate table rows
+    function generateTableRows() {
+      const tbody = document.getElementsByTagName('tbody')[0];
+      tbody.innerHTML = ''; // Clear existing rows
+  
+      
+  
+      mystocks.forEach(stock => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+        <td>${stock.name}</td>
+          <td>${stock["1. open"]}</td>
+          <td>${stock["2. high"]}</td>
+          <td>${stock["3. low"]}</td>
+          <td>${stock["4. close"]}</td>
+          <td>${stock["5. volume"]}</td>
+          <td>${stock.latest_date}</td>
+  
+          <td>
+            <a href="#" class="btn btn-primary btn-sm buy-btn">Purchase</a>
+            <a href="#" class="btn btn-warning btn-sm" onclick="fetchPrediction()">Predict</a>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
       });
-    });
-
+    }
+  
     async function fetchPrediction() {
       try {
         const response = await fetch('/predict', {
@@ -517,56 +524,20 @@
         console.error('There was a problem with the fetch operation:', error);
       }
     }
-
-    // $(document).ready(function() {
-    //         // Fetch stocks data from the server
-    //         $.ajax({
-    //             url: '/stocks_data',
-    //             method: 'GET',
-    //             success: function(response) {
-    //                 var stocks = response.stocks;
-    //                 console.log('Fetched stocks:', stocks);
-                    
-    //                 var tbody = document.querySelector('#stocks-tbody');
-    //                 var thead = document.querySelector('#table-header');
-                    
-    //                 // Clear existing rows and headers
-    //                 tbody = '';
-    //                 thead = '';
-                    
-    //                 // Check if there are stocks available
-    //                 if (stocks.length > 0) {
-                        
-    //                     // Get unique keys for column headers from the first stock entry
-    //                     var headers = Object.keys(stocks[0]);
-    //                     console.log('Table headers:', headers);
-
-    //                     // Create header row
-    //                     headers.forEach(function(header) {
-    //                         console.log('header: ', header)
-    //                         thead += '<th>' + header + '</th>';
-
-    //                         // Create rows for each stock entry
-    //                     stocks.forEach(function(stock) {
-    //                         var row = '<tr>';
-    //                         headers.forEach(function(header) {
-    //                             row +='<td>' + stock[header] + '</td>';
-    //                             console.log('cell value: ', stock[header])
-    //                         });
-    //                         row += '</tr>';
-    //                         tbody+= row;
-    //                         console.log('Row added:', row);
-    //                     });
-    //                     });
-
-                        
-    //                 }
-    //             },
-    //             error: function(error) {
-    //                 console.log('Error fetching stocks data:', error);
-    //             }
-    //         });
-    //     });
-    </script>
+    // Generate table rows on page load
+    window.onload = generateTableRows;
+  </script>
+   <!-- Vendor JS Files -->
+   <script src="/static/vendor/apexcharts/apexcharts.min.js"></script>
+   <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+   <script src="/static/vendor/chart.js/chart.umd.js"></script>
+   <script src="/static/vendor/echarts/echarts.min.js"></script>
+   <script src="/static/vendor/quill/quill.js"></script>
+   <!-- <script src="/static/vendor/simple-datatables/simple-datatables.js"></script> -->
+   <script src="/static/vendor/tinymce/tinymce.min.js"></script>
+   <script src="/static/vendor/php-email-form/validate.js"></script>
+ 
+   <!-- Template Main JS File -->
+   <script src="/static/js/main.js"></script>
 </body>
 </html>

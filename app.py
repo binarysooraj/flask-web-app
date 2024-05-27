@@ -14,7 +14,9 @@ import certifi
 from predict import forecast
 from datetime import date
 import json
-
+import json
+import plotly.graph_objs as go
+import datetime
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'your_secret_key'  # Change this to your preferred secret key
@@ -41,6 +43,60 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 mail = Mail(app)
 
+def getStocksData():
+    # Open and read the JSON file correctly
+    with open('51_stocks_data.json', 'r') as file:
+        data = json.load(file)  # Use json.load to read from a file
+    
+    # Extract the latest date data
+    result = []
+
+    for stock, dates in data.items():
+        latest_date = max(dates.keys())
+        print('latest_date: ', latest_date)
+        latest_data = dates[latest_date]
+        print('latest_data: ', latest_data)
+        latest_data["name"] = stock
+        result.append(latest_data)
+
+    # Output the result
+    return jsonify(stocks=result)
+
+def load_stock_data():
+    with open('model_files/51_stocks_data.json') as f:
+        return json.load(f)
+
+def create_plot():
+    stock_data = load_stock_data()
+    
+    fig = go.Figure()
+    
+    for symbol, data in stock_data.items():
+        print(symbol)
+        print(data)
+        dates = []
+        prices = []
+        for date, values in data.items():
+            dates.append(datetime.datetime.strptime(date, '%Y-%m-%d'))
+            prices.append(float(values['4. close']))
+        
+        hover_text = [f"{symbol}: {date.strftime('%Y-%m-%d')}" for date in dates]
+        
+        fig.add_trace(go.Scatter(x=dates, y=prices, mode='lines', name=symbol, hovertext=hover_text))
+
+    fig.update_layout(
+        title='Closing Prices of Stocks',
+        xaxis_title='Date',
+        yaxis_title='Close Price (USD)',
+        hovermode='closest',
+        xaxis=dict(
+            tickformat='%b %Y'
+        )
+    )
+    
+    return fig
+
+
 # Routes
 @app.route('/')
 def index():
@@ -48,47 +104,67 @@ def index():
             user = session['user']
             # Fetch user's posts from the database
             # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('index.html', user=user)
+            plot = create_plot()
+            return render_template('index.html', plot=plot.to_html(full_html=False, include_plotlyjs='cdn'), user=user)
     else:
             return redirect(url_for('signin'))
     
+
+
+
 
 @app.route('/purchaseStocks')
 def purchaseStocks():
     if 'user' in session:
-            user = session['user']
-            # Fetch user's posts from the database
-            # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('tables-data.html', user=user)
+        user = session['user']
+            # Open and read the JSON file correctly
+        with open('model_files/51_stocks_data.json', 'r') as file:
+            data = json.load(file)  # Use json.load to read from a file
+        
+        # Extract the latest date data
+        result = []
+
+        for stock, dates in data.items():
+            latest_date = max(dates.keys())
+            print('latest_date: ', latest_date)
+            latest_data = dates[latest_date]
+            latest_data["name"] = stock
+            latest_data["latest_date"] = latest_date
+            result.append(latest_data)
+
+        # Output the result
+        # return jsonify(stocks=result)
+        return render_template('tables-data.html', user=user, stocks=result)
     else:
-            return redirect(url_for('signin'))
+        return redirect(url_for('signin'))
     
 
 @app.route('/stocks_data')
 def getStocksData():
-    # Open and read the JSON file correctly
-    with open('model_files/51_stocks_data.json', 'r') as file:
-        data = json.load(file)  # Use json.load to read from a file
-
-    last_date = sorted(data.keys(), reverse=True)[0]
-    last_date_values = data[last_date]
-
-    # Prepare the stocks data
-    for key, value in last_date_values.items():
-        stocks.append(value)
-
-    return jsonify(stocks=stocks)
-
-
-@app.route('/sellStocks')
-def sellStocks():
     if 'user' in session:
-            user = session['user']
-            # Fetch user's posts from the database
-            # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('tables-general.html', user=user)
+        user = session['user']
+            # Open and read the JSON file correctly
+        with open('model_files/51_stocks_data.json', 'r') as file:
+            data = json.load(file)  # Use json.load to read from a file
+        
+        # Extract the latest date data
+        result = []
+
+        for stock, dates in data.items():
+            latest_date = max(dates.keys())
+            print('latest_date: ', latest_date)
+            latest_data = dates[latest_date]
+            latest_data["name"] = stock
+            latest_data["latest_date"] = latest_date
+            result.append(latest_data)
+
+        # Output the result
+        # return jsonify(stocks=result)
+        return render_template('tables-general.html', user=user, stocks=result)
     else:
-            return redirect(url_for('signin'))
+        return redirect(url_for('signin'))
+
+
     
 
 @app.route('/predict')
@@ -508,3 +584,5 @@ cloudinary.config(
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")
+
+

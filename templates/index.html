@@ -29,6 +29,7 @@
   <!-- Template Main CSS File -->
   <link href="/static/css/style.css" rel="stylesheet">
   <link href="/templates/assets/css/" rel="stylesheet">
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
 
 
   <!-- =======================================================
@@ -39,7 +40,8 @@
   * License: https://bootstrapmade.com/license/
   ======================================================== -->
 </head>
-
+</head>
+   
 <body>
 
   <!-- ======= Header ======= -->
@@ -315,7 +317,7 @@
         </a>
         <ul id="tables-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
           <li>
-            <a href="/sellStocks">
+            <a href="/stocks_data">
               <i class="bi bi-circle"></i><span>Sell</span>
             </a>
           </li>
@@ -576,6 +578,11 @@
 
               </div>
             </div><!-- End Reports -->
+            
+            <h1>Stocks Data Graph</h1>
+            <div id="plot"></div>
+            {{ plot | safe }}
+
             <div class="card p-4">
               <form class="post-form" action="/create-post" method="POST">
                 <h5 class="card-title">Create Post</h5>
@@ -601,7 +608,6 @@
                 </div>
               </form>
             </div>
-  
           </div>
         </div><!-- End Left side columns -->
 
@@ -642,4 +648,20 @@
 
 </body>
 
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Plot</title>
+    <!-- Plotly CDN -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+</head>
+<body>
+    <h1>Stock Plot</h1>
+    <div id="plot"></div>
+    {{ plot | safe }}
+</body>
 </html>
