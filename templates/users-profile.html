@@ -51,12 +51,7 @@
       <i class="bi bi-list toggle-sidebar-btn"></i>
     </div><!-- End Logo -->
 
-    <div class="search-bar">
-      <form class="search-form d-flex align-items-center" method="POST" action="#">
-        <input type="text" name="query" placeholder="Search" title="Enter search keyword">
-        <button type="submit" title="Search"><i class="bi bi-search"></i></button>
-      </form>
-    </div><!-- End Search Bar -->
+    <!-- End Search Bar -->
 
     <nav class="header-nav ms-auto">
       <ul class="d-flex align-items-center">
@@ -282,31 +277,7 @@
         </a>
       </li><!-- End Dashboard Nav -->
 
-      <li class="nav-item">
-        <a class="nav-link collapsed" data-bs-target="#components-nav" data-bs-toggle="collapse" href="#">
-          <i class="bi bi-menu-button-wide"></i><span>Components</span><i class="bi bi-chevron-down ms-auto"></i>
-        </a>
-        <ul id="components-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-          
-          
-          
-          
-          <li>
-            <a href="/components-progress">
-              <i class="bi bi-circle"></i><span>Progress</span>
-            </a>
-          </li>
-          <li>
-            <a href="/components-spinners">
-              <i class="bi bi-circle"></i><span>Spinners</span>
-            </a>
-          </li>
-          
-        </ul>
-      </li><!-- End Components Nav -->
-
-      
-
+    
       <li class="nav-item">
         <a class="nav-link collapsed" data-bs-target="#tables-nav" data-bs-toggle="collapse" href="#">
           <i class="bi bi-layout-text-window-reverse"></i><span>Stocks</span><i class="bi bi-chevron-down ms-auto"></i>
@@ -433,8 +404,8 @@
                   </div>
 
                   <div class="row">
-                    <div class="col-lg-3 col-md-4 label">Company</div>
-                    <div class="col-lg-9 col-md-8">Lueilwitz, Wisoky and Leuschke</div>
+                    <div class="col-lg-3 col-md-4 label">Wallet</div>
+                    <div class="col-lg-9 col-md-8">{{user.wallet}} Pkr</div>
                   </div>
 
                   <div class="row">
@@ -475,6 +446,19 @@
                                   <input type="file" name="file">
                                   <a href="/remove_profile_image" class="btn btn-danger btn-sm" title="Remove my profile image"><i class="bi bi-trash"></i> Remove</a>
                           </div>
+
+                          <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" id="uploadForm">
+                            <div class="form-group">
+                              <label for="file">Choose an image</label>
+                              <input type="file" class="form-control-file" id="file" name="file" required>
+                            </div>
+                            <button type="submit" class="btn btn-primary btn-sm" title="Upload new profile image">
+                              <i class="bi bi-upload"></i> Upload
+                            </button>
+                          </form>
+                          <a href="{{ url_for('remove_profile_image') }}" class="btn btn-danger btn-sm" title="Remove my profile image">
+                            <i class="bi bi-trash"></i> Remove
+                          </a>
 
                       </div>
                   </div>
@@ -636,6 +620,24 @@
   <!-- Template Main JS File -->
   <script src="/static/js/main.js"></script>
 
+
+  <script>
+    document.getElementById('uploadForm').onsubmit = async function(event) {
+      event.preventDefault();
+      let formData = new FormData(this);
+      let response = await fetch('{{ url_for("upload_image") }}', {
+        method: 'POST',
+        body: formData
+      });
+      let result = await response.json();
+      if (result.success) {
+        alert('Image uploaded successfully: ' + result.url);
+        // Update the profile image preview or perform other actions
+      } else {
+        alert('Image upload failed: ' + result.error);
+      }
+    };
+</script>
 </body>
 
 </html>

@@ -16,7 +16,8 @@ from datetime import date
 import json
 import json
 import plotly.graph_objs as go
-import datetime
+from datetime import datetime
+from bson import ObjectId
 
 app = Flask(__name__)
 app.config['JWT_SECRET_KEY'] = 'your_secret_key'  # Change this to your preferred secret key
@@ -26,14 +27,15 @@ app.secret_key = 'your_secret_key'  # Change this to your preferred secret key
 
 # MongoDB connection
 client = MongoClient(
-    'mongodb+srv://soorajbinary:1rkptm6BRGpFMTVs@cluster0.povmgmh.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
+    'mongodb+srv://stockpricepredictionfyp:7rZ18BFVmJ129ysl@cluster0.zswnrqs.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0',
     tlsCAFile=certifi.where()
 )
-
-
 db = client['demo']
 users_collection = db['users']
 posts_collection = db['posts']
+stocks_collection = db['stocks']
+
+posts = []
 
 app.config['MAIL_SERVER']= 'live.smtp.mailtrap.io'
 app.config['MAIL_PORT'] = 587
@@ -43,9 +45,19 @@ app.config['MAIL_USE_TLS'] = True
 app.config['MAIL_USE_SSL'] = False
 mail = Mail(app)
 
+
+# Configure Cloudinary credentials
+cloudinary.config(
+    cloud_name='daxa9xef8',
+    api_key='553891686579191',
+    api_secret='cmfGWd0Nkvw0rdGIA5JXPLW1ps0'
+)
+
+
+
 def getStocksData():
     # Open and read the JSON file correctly
-    with open('51_stocks_data.json', 'r') as file:
+    with open('model_files/51_stocks_data.json', 'r') as file:
         data = json.load(file)  # Use json.load to read from a file
     
     # Extract the latest date data
@@ -53,9 +65,7 @@ def getStocksData():
 
     for stock, dates in data.items():
         latest_date = max(dates.keys())
-        print('latest_date: ', latest_date)
         latest_data = dates[latest_date]
-        print('latest_data: ', latest_data)
         latest_data["name"] = stock
         result.append(latest_data)
 
@@ -66,18 +76,17 @@ def load_stock_data():
     with open('model_files/51_stocks_data.json') as f:
         return json.load(f)
 
+
 def create_plot():
     stock_data = load_stock_data()
     
     fig = go.Figure()
     
     for symbol, data in stock_data.items():
-        print(symbol)
-        print(data)
         dates = []
         prices = []
         for date, values in data.items():
-            dates.append(datetime.datetime.strptime(date, '%Y-%m-%d'))
+            dates.append(datetime.strptime(date, '%Y-%m-%d'))
             prices.append(float(values['4. close']))
         
         hover_text = [f"{symbol}: {date.strftime('%Y-%m-%d')}" for date in dates]
@@ -112,6 +121,44 @@ def index():
 
 
 
+@app.route('/purchase', methods=['POST'])
+def purchase_stock():
+    if 'user' not in session:
+        return jsonify({"message": "User not logged in"}), 401
+
+    data = request.get_json()
+    stock_index = data.get('stockIndex')
+    stock_price = data.get('stockPrice')
+    stock_name = data.get('stockName')
+    number_of_stocks = data.get('numberOfStocks')
+    total_charges = data.get('totalCharges')
+
+    user = users_collection.find_one({'uid': session['user']['uid']})
+   
+    if user['wallet'] < total_charges:
+        return jsonify({"message": "Insufficient funds in your wallet"}), 400
+
+    # Deduct the total charges from the user's wallet
+    new_wallet_balance = user['wallet'] - total_charges
+    users_collection.update_one({'uid': session['user']['uid']}, {'$set': {'wallet': new_wallet_balance}})
+    
+    date_of_purchase = datetime.now().strftime('%Y-%m-%d')
+
+
+    # Store the purchase details in the stocks collection
+    stock_purchase = {
+        'uid': session['user']['uid'],
+        'stock_index': stock_index,
+        'stock_name': stock_name,
+        'price': stock_price,
+        'date_of_purchase': date_of_purchase,
+        'volume': number_of_stocks,
+        'totalCharges': total_charges,
+        'type':'purchase'
+    }
+    stocks_collection.insert_one(stock_purchase)
+
+    return jsonify({"message": "Stocks purchased successfully"})
 
 @app.route('/purchaseStocks')
 def purchaseStocks():
@@ -126,7 +173,6 @@ def purchaseStocks():
 
         for stock, dates in data.items():
             latest_date = max(dates.keys())
-            print('latest_date: ', latest_date)
             latest_data = dates[latest_date]
             latest_data["name"] = stock
             latest_data["latest_date"] = latest_date
@@ -143,67 +189,70 @@ def purchaseStocks():
 def getStocksData():
     if 'user' in session:
         user = session['user']
-            # Open and read the JSON file correctly
-        with open('model_files/51_stocks_data.json', 'r') as file:
-            data = json.load(file)  # Use json.load to read from a file
         
-        # Extract the latest date data
+        # Fetch stocks data for the logged-in user
+        user_stocks = stocks_collection.find({'uid': user['uid']})
+        
+        # Prepare result list to store filtered stocks data
         result = []
 
-        for stock, dates in data.items():
-            latest_date = max(dates.keys())
-            print('latest_date: ', latest_date)
-            latest_data = dates[latest_date]
-            latest_data["name"] = stock
-            latest_data["latest_date"] = latest_date
-            result.append(latest_data)
+        for stock in user_stocks:
+            stock['_id'] = str(stock['_id'])  # Convert ObjectId to string
+            result.append(stock)
 
         # Output the result
-        # return jsonify(stocks=result)
         return render_template('tables-general.html', user=user, stocks=result)
     else:
         return redirect(url_for('signin'))
 
 
+
     
 
-@app.route('/predict')
+@app.route('/predict', methods=['POST'])
 def predict():
-    today = date.today()
-    print("Today's date:", today)
-    predictions = forecast(today)
-    predictions =  predictions.tolist()
-    print('predictions: ', predictions[0])
+    data = request.get_json()
+    stock_index = data.get('stockIndex')
+    date = data.get('date')
+    
+    # Ensure the date is in the correct format and valid
+    try:
+        forecast_date = datetime.strptime(date, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
+    
+    # Call your forecasting function with the provided date
+    predictions = forecast(date)
+    
+    # Ensure the predictions are in a list format
+    predictions = predictions.tolist() if hasattr(predictions, 'tolist') else predictions
+    
     return jsonify(predictions=predictions)
 
 
-@app.route('/calculate_risk')
+@app.route('/calculate_risk', methods=['POST'])
 def calculate_risk():
+    data = request.get_json()
+    index = data.get('index')
+    date = data.get('date')
+    purchase_price = data.get('purchasePrice')
 
-    today = date.today()
-    print("Today's date:", today)
-    current_prices = forecast(today)
-    current_prices =  current_prices.tolist()[0]
-    print('current_prices: ', current_prices[0])
-    # current_price=12
-    # purchase_price = 10
-
-    purchase_prices = [165.0, 144.5699920654297, 131.40000915527344, 344.47003173828125, 367.75, 475.6900634765625, 142.0500030517578, 468.5000305175781, 29.85000228881836, 135.32000732421875, 462.83001708984375, 56.130001068115234, 46.790000915527344, 102.45999908447266, 159.1599884033203, 251.12001037597656, 148.52000427246094, 57.57999801635742, 62.56999588012695, 132.55999755859375, 68.04999542236328, 257.9800109863281, 418.7699890136719, 89.29000091552734, 31.73000144958496, 46.439998626708984, 167.08999633789062, 51.11000061035156, 376.9100036621094, 83.9000015258789, 16.09000015258789, 37.30999755859375, 156.8300018310547, 37.869998931884766, 96.80000305175781, 141.8199920654297, 106.93000030517578, 25.260000228881836, 107.6300048828125, 144.4499969482422, 439.20001220703125, 145.72999572753906, 58.060001373291016, 162.0399932861328, 265.42999267578125, 58.6099967956543, 331.969970703125, 644.6900024414062, 137.39999389648438, 88.83999633789062, 72.5]
-    print('purchase_prices: ', purchase_prices)
-
-    risk_list = []
+    # Assuming you have a function forecast that retrieves current prices
+    current_prices = forecast(date)
+    current_price = current_prices[0][index]
     
-    for i in range(0, len(purchase_prices)):
+    try:
+        # Convert purchase_price to float if it's not already
+        purchase_price = float(purchase_price)
 
-        print('\n\n')
-        print('Current price: ', current_prices[i])
-        print('Purchase_proce:', purchase_prices[i])
+        # Convert current_price to float if it's not already
+        current_price = float(current_price)
 
-        risk = current_prices[i] - (purchase_prices[i])
-
-        risk_list.append(risk)
-
-    return jsonify(risk_list=risk_list)
+        # Calculate risk
+        risk = current_price - purchase_price
+        return jsonify(risk=risk)
+    except Exception as e:
+        return jsonify({"message": str(e)}), 400
 
 
 @app.route('/history')
@@ -241,54 +290,7 @@ def learn():
     
 
 
-@app.route('/components-modal')
-def componentsModal():
-    if 'user' in session:
-            user = session['user']
-            # Fetch user's posts from the database
-            # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('components-modal.html', user=user)
-    else:
-            return redirect(url_for('signin'))
-    
 
-
-@app.route('/components-pagination')
-def componentsPagination():
-    if 'user' in session:
-            user = session['user']
-            # Fetch user's posts from the database
-            # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('components-pagination.html', user=user)
-    else:
-            return redirect(url_for('signin'))
-    return render_template('components-pagination.html')
-
-
-@app.route('/components-progress')
-def componentProgress():
-    if 'user' in session:
-            user = session['user']
-            # Fetch user's posts from the database
-            # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('components-progress.html', user=user)
-    else:
-            return redirect(url_for('signin'))
-    return render_template('components-progress.html')
-
-
-@app.route('/components-spinners')
-def componentSpinners():
-    if 'user' in session:
-            user = session['user']
-            # Fetch user's posts from the database
-            # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('components-spinners.html', user=user)
-    else:
-            return redirect(url_for('signin'))
-    return render_template('components-spinners.html')
-
-posts = []
 
 
 
@@ -341,56 +343,42 @@ def aboutPage():
 
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
+    error = None
     if request.method == 'POST':
-        # Get form data
-        profile_picture = 'profile'
-        # profile_picture = request.form['profile_picture']
         username = request.form['username']
         email = request.form['email']
-        # contact = request.form['contact']
-        # address = request.form['address']
         password = request.form['password']
-        # city = request.form['city']
-        # country = request.form['country']
-        city = 'city'
-        country = 'country'
-        address = 'address'
-        contact = '91313123322'
-
-        # Simple form validation
-        if not (profile_picture and username and email and contact and address and password and city and country):
-            return "All fields are required", 400
-
-        # Check if user already exists
+        
+        # Check if user already exists  
         if users_collection.find_one({'email': email}):
-            return "User already exists", 400
+            error = "User already exists"
+        else:
+            # Hash password
+            hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
 
-        # Hash password
-        hashed_password = bcrypt.generate_password_hash(password).decode('utf-8')
+            # Generate unique uid
+            uid = str(uuid.uuid4())
 
-        # Generate unique uid
-        uid = str(uuid.uuid4())
+            # Insert user into database
+            users_collection.insert_one({
+                'uid': uid,
+                'image_url': '.............',
+                'username': username,
+                'email': email,
+                'contact': '.............',
+                'address': '.............',
+                'password': hashed_password,
+                'city': '.............',
+                'country': '.............',
+                'wallet': 50000
+            })
+            return redirect(url_for('signin'))
 
-        # Insert user into database
-        users_collection.insert_one({
-            'uid': uid,
-            'image_url': '',
-            'username': username,
-            'email': email,
-            'contact': contact,
-            'address': address,
-            'password': hashed_password,
-            'city': city,
-            'country': country,
-            'wallet': 500
-        })
-
-        return redirect(url_for('signin'))
-
-    return render_template('pages-register.html')
+    return render_template('pages-register.html', error=error)
 
 @app.route('/signin', methods=['GET', 'POST'])
 def signin():
+    error = None
     if request.method == 'POST':
         email = request.form['email']
         password = request.form['password']
@@ -426,7 +414,7 @@ def dashboard():
         if request.method == 'POST':
             # Create post logic
             pass
-        return render_template('index.html', user=user)
+        return redirect(url_for('index'))
     else:
         return redirect(url_for('signin'))
     
@@ -573,16 +561,76 @@ def get_posts():
             return redirect(url_for('signin'))        
 
 
-# Configure Cloudinary credentials
-cloudinary.config(
-    cloud_name='daxa9xef8',
-    api_key='553891686579191',
-    api_secret='cmfGWd0Nkvw0rdGIA5JXPLW1ps0'
-)
+
+@app.route('/sell', methods=['POST'])
+def sell_stock():
+    if 'user' not in session:
+        return jsonify({"message": "User not logged in"}), 401
+
+    data = request.get_json()
+    stock_index = data.get('stockIndex')
+    stock_price = data.get('stockPrice')
+    id = data.get('id')
+    number_of_stocks = data.get('numberOfStocks')
+
+    user = users_collection.find_one({'uid': session['user']['uid']})
+
+    # Check if the user has the stock in their possession
+    user_stock = stocks_collection.find_one({'_id': ObjectId(id)})
+    print("Current stocks collection:")    
+    print(user_stock)
+    if not user_stock:
+        return jsonify({"message": "User does not possess this stock"}), 400
+
+    # Check if the user has enough stocks to sell
+    if int(user_stock['volume']) < int(number_of_stocks):
+        return jsonify({"message": "User does not have enough stocks to sell"}), 400
+
+    # Calculate the total charges for the sale
+  
+    total_charges = float(stock_price) * int(number_of_stocks)
+
+    # Update the user's wallet balance
+    new_wallet_balance = user['wallet'] + total_charges
+
+    users_collection.update_one({'uid': session['user']['uid']}, {'$set': {'wallet': new_wallet_balance}})
+    # Update the volume of the sold stock in the stocks collection
+    new_volume = int(user_stock['volume']) - int(number_of_stocks)
+    if new_volume > 0:
+            stocks_collection.update_one(
+                {'uid': session['user']['uid'], 'stock_index': stock_index},
+                {'$set': {'volume': new_volume}}
+            )
+    else:
+            stocks_collection.delete_one({'uid': session['user']['uid'], 'stock_index': stock_index})
+
+    return jsonify({"message": "Stocks sold successfully"})
 
 
+
+@app.route('/upload_image', methods=['POST'])
+def upload_image():
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file part in the request'}), 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No selected file'}), 400
+
+        if file:
+            # Upload the image to Cloudinary
+            upload_result = cloudinary.uploader.upload(file)
+            # Get the URL of the uploaded image
+            image_url = upload_result['url']
+            return jsonify({'success': True, 'url': image_url}), 200
+
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")
+
 
 

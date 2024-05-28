@@ -39,6 +39,9 @@
   * License: https://bootstrapmade.com/license/
   ======================================================== -->
 
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+
+
 </head>
 
 <body>
@@ -54,12 +57,7 @@
       <i class="bi bi-list toggle-sidebar-btn"></i>
     </div><!-- End Logo -->
 
-    <div class="search-bar">
-      <form class="search-form d-flex align-items-center" method="POST" action="#">
-        <input type="text" name="query" placeholder="Search" title="Enter search keyword">
-        <button type="submit" title="Search"><i class="bi bi-search"></i></button>
-      </form>
-    </div><!-- End Search Bar -->
+    <!-- End Search Bar -->
 
     <nav class="header-nav ms-auto">
       <ul class="d-flex align-items-center">
@@ -285,28 +283,8 @@
         </a>
       </li><!-- End Dashboard Nav -->
 
-      <li class="nav-item">
-        <a class="nav-link collapsed" data-bs-target="#components-nav" data-bs-toggle="collapse" href="#">
-          <i class="bi bi-menu-button-wide"></i><span>Components</span><i class="bi bi-chevron-down ms-auto"></i>
-        </a>
-        <ul id="components-nav" class="nav-content collapse " data-bs-parent="#sidebar-nav">
-
-          
-
-          
-          <li>
-            <a href="/components-progress">
-              <i class="bi bi-circle"></i><span>Progress</span>
-            </a>
-          </li>
-          <li>
-            <a href="/components-spinners">
-              <i class="bi bi-circle"></i><span>Spinners</span>
-            </a>
-          </li>
-
-        </ul>
-      </li><!-- End Components Nav -->
+      
+  
 
       
 
@@ -389,23 +367,18 @@
 
           <div class="card">
             <div class="card-body">
-              <h5 class="card-title">Datatables</h5>
-              <p>Add lightweight datatables to your project with using the <a
-                  href="https://github.com/fiduswriter/Simple-DataTables" target="_blank">Simple DataTables</a> library.
-                Just add <code>.datatable</code> class name to any table you wish to conver to a datatable. Check for <a
-                  href="https://fiduswriter.github.io/simple-datatables/demos/" target="_blank">more examples</a>.</p>
+          
 
               <!-- Table with stripped rows -->
               <table class="table datatable">
                 <thead>
                   <tr>
+                    <th><b>S.No</b></th>
                     <th><b>Symbol</b></th>
-                    <th>Open</th>
-                    <th>High</th>
-                    <th>Low</th>
-                    <th>Close</th> <!-- Added column header for the Buy button -->
-                    <th>Volume</th> <!-- Added column header for the Buy button -->
-                    <th data-type="date" data-format="YYYY/DD/MM">Date</th>
+                    <th>Date of Purchase</th>
+                    <th>Purchased Price</th>
+                    <th>Volume</th>
+                    <th>Total Charges</th> <!-- Added column header for the Buy button -->
                     <th>Action</th> <!-- Added column header for the Buy button -->
 
                   </tr>
@@ -445,69 +418,213 @@
   <a href="#" class="back-to-top d-flex align-items-center justify-content-center"><i
       class="bi bi-arrow-up-short"></i></a>
 
+      <div class="modal fade" id="predictionModal" tabindex="-1" aria-labelledby="predictionModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="predictionModalLabel">Calculate Risk</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row mb-3">
+                <div class="col">
+                  <label for="dateInput" class="form-label">Select Date:</label>
+                  <input type="date" class="form-control" id="dateInput" value="" required>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                  <p class="prediction-msg"></p>
+                  <p class="error-msg text-danger" style="display: none;">Please select a valid date.</p>
+                  <div class="loader" style="display: none;">Please wait... model is calculating the risk.</div>
+                </div>
+              </div>
+              <input type="hidden" id="modalStockIndexPrediction">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Close</button>
+              <button type="button" class="btn btn-primary" onclick="predictStock()">Calculate</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="modal fade" id="basicModal" tabindex="-1" aria-labelledby="basicModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5 class="modal-title" id="basicModalLabel">Sell Stock</h5>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+              <div class="row mb-3">
+                <div class="col">
+                  <label for="stockInput" class="form-label">Enter number of stocks:</label>
+                  <input type="number" class="form-control" id="stockInput" value="1" required>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col">
+                  <p class="modal-msg"></p>
+                  <p class="error-msg text-danger" style="display: none;">Please enter a valid number of stocks (at least 1).</p>
+                </div>
+              </div>
+              <input type="hidden" id="modalStockIndex">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-success" onclick="sellStock()">Confirm</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      
 
 
-  <script>
-    async function handleRiskCalculation(){
-      // alert('Risk calculation')
-      try {
-        const response = await fetch('/calculate_risk', {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json'
-          }
-        });
 
-        if (!response.ok) {
-          throw new Error('Network response was not ok ' + response.statusText);
-        }
-
-        const data = await response.json();
-        console.log(data);  // Handle the data returned from the Flask endpoint
-        console.log(data.risk_list)
-        alert('Risk List: ' + data.risk_list);  // Example of using the data
-      } catch (error) {
-        console.error('There was a problem with the fetch operation:', error);
-      }
-    }
-    
-  </script>
 <script>
-  const mystocks = {{ stocks | tojson }};
+  const mystocks = {{ stocks | tojson | safe }};
 
   // Function to generate table rows
   function generateTableRows() {
     const tbody = document.getElementsByTagName('tbody')[0];
     tbody.innerHTML = ''; // Clear existing rows
-
+    var i = 1;
     
 
-    mystocks.forEach(stock => {
+    if (mystocks.length === 0) {
+      // Display a message if mystocks is empty
       const row = document.createElement('tr');
-      row.innerHTML = `
-      <td>${stock.name}</td>
-        <td>${stock["1. open"]}</td>
-        <td>${stock["2. high"]}</td>
-        <td>${stock["3. low"]}</td>
-        <td>${stock["4. close"]}</td>
-        <td>${stock["5. volume"]}</td>
-        <td>${stock.latest_date}</td>
-
-        <td>
-          <a href="#" class="btn btn-primary btn-sm buy-btn">Sell</a>
-          <a href="#" class="btn btn-danger btn-sm" onclick="handleRiskCalculation()">Calculate Risk</a>
-        </td>
-      `;
-      
+      row.innerHTML = `<td colspan="8" style="text-align: center; color: red; background-color: white; font-size: 24px; @media (max-width: 768px) { font-size: 18px; }">Please purchase some stocks first.</td>`;
       tbody.appendChild(row);
-    });
+    } else {
+      mystocks.forEach((stock, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${i}</td>
+          <td>${stock.stock_name}</td>
+          <td>${stock.date_of_purchase}</td>
+          <td>${stock.price}</td>
+          <td>${stock.volume}</td>
+          <td>${stock.totalCharges}</td>
+          <td>
+            <a href="#" class="btn btn-primary btn-sm buy-btn" data-index="${index}" onclick="showSellModal(${index},${stock.price},'${stock._id}')">Sell</a>
+            <a href="#" class="btn btn-danger btn-sm" onclick="handleRiskCalculation(${stock.price}, ${stock.stock_index})">Calculate Risk</a>
+          </td>
+        `;
+        i++;
+        tbody.appendChild(row);
+      });}
   }
 
-  // Function to handle risk calculation (placeholder)
-  function handleRiskCalculation() {
-    alert('Risk calculation function called.');
+  function showSellModal(index,price,id) {
+    // Store the index in a hidden input in the modal
+    document.getElementById('modalStockIndex').value = index+","+price+","+id;
+
+    // Show the sell modal
+    var myModal = new bootstrap.Modal(document.getElementById('basicModal'));
+    myModal.show();
+}
+async function sellStock() {
+  const index = document.getElementById('modalStockIndex').value.split(",")[0];
+  const price = document.getElementById('modalStockIndex').value.split(",")[1];
+  const id = document.getElementById('modalStockIndex').value.split(",")[2];
+  const numberOfStocks = document.getElementById('stockInput').value;
+
+    // Console log the values
+    console.log("ID:", id);
+    console.log("Index:", index);
+    console.log("Price:", price);
+    console.log("Number of Stocks:", numberOfStocks);
+
+  
+  // Validate input
+  if (!numberOfStocks || numberOfStocks < 1) {
+      document.querySelector('.error-msg').style.display = 'block';
+      return;
+  } else {
+      document.querySelector('.error-msg').style.display = 'none';
   }
 
+  try {
+      const response = await fetch('/sell', {
+          method: 'POST',
+          headers: {
+              'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+              stockIndex: index,
+              numberOfStocks: numberOfStocks,
+              stockPrice: price,
+              id:id
+          })
+      });
+
+      if (!response.ok) {
+          throw new Error('Network response was not ok ' + response.statusText);
+      }
+
+      const result = await response.json();
+      console.log(result.message);
+
+      // Close the modal
+      var myModal = bootstrap.Modal.getInstance(document.getElementById('basicModal'));
+      myModal.hide();
+
+      window.location.reload();
+
+  } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
+  }
+}
+
+
+  async function handleRiskCalculation(price, index) {
+    const modalStockIndexPrediction = document.getElementById('modalStockIndexPrediction');
+    modalStockIndexPrediction.value = index+","+price;
+  
+    const dateInput = document.getElementById('dateInput');
+    const currentDate = new Date().toISOString().split('T')[0];
+    dateInput.value = currentDate;
+  
+    $('#predictionModal').modal('show');
+  }
+  
+  async function predictStock() {
+    const index = document.getElementById('modalStockIndexPrediction').value.split(",")[0];
+    const price = document.getElementById('modalStockIndexPrediction').value.split(",")[1];
+    const date = document.getElementById('dateInput').value;
+  
+    const loader = document.querySelector('.loader');
+    const predictionMsg = document.querySelector('.prediction-msg');
+  
+    loader.style.display = 'block';
+    predictionMsg.textContent = '';
+  
+    try {
+      const response = await fetch('/calculate_risk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ index: parseInt(index), purchasePrice: price, date:date })
+      });
+  
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error('Network response was not ok: ' + data.message);
+      }
+      const data = await response.json();
+      var result = data.risk.toFixed(2) > 0 ? 'Profit' : 'Loss';
+      predictionMsg.textContent = ` ${result} will be ${data.risk.toFixed(2)}Pkr per stock on ${date}.`;
+    } catch (error) {
+      console.error('There was a problem with the fetch operation:', error);
+    } finally {
+      loader.style.display = 'none';
+    }
+    
+  }
+  
   // Generate table rows on page load
   window.onload = generateTableRows;
 </script>
@@ -526,6 +643,14 @@
 
   <!-- Template Main JS File -->
   <script src="/static/js/main.js"></script>
+  <script>
+    // Get the current date
+    const currentDate = new Date().toISOString().split('T')[0];
+
+    // Set the minimum date for the date input field
+    document.getElementById('dateInput').min = currentDate;
+</script>
+
 </body>
 
 </html>
