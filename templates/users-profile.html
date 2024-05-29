@@ -62,146 +62,7 @@
           </a>
         </li><!-- End Search Icon-->
 
-        <li class="nav-item dropdown">
-
-          <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
-            <i class="bi bi-bell"></i>
-            <span class="badge bg-primary badge-number">4</span>
-          </a><!-- End Notification Icon -->
-
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow notifications">
-            <li class="dropdown-header">
-              You have 4 new notifications
-              <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
-            </li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="notification-item">
-              <i class="bi bi-exclamation-circle text-warning"></i>
-              <div>
-                <h4>Lorem Ipsum</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>30 min. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="notification-item">
-              <i class="bi bi-x-circle text-danger"></i>
-              <div>
-                <h4>Atque rerum nesciunt</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>1 hr. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="notification-item">
-              <i class="bi bi-check-circle text-success"></i>
-              <div>
-                <h4>Sit rerum fuga</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>2 hrs. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="notification-item">
-              <i class="bi bi-info-circle text-primary"></i>
-              <div>
-                <h4>Dicta reprehenderit</h4>
-                <p>Quae dolorem earum veritatis oditseno</p>
-                <p>4 hrs. ago</p>
-              </div>
-            </li>
-
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-            <li class="dropdown-footer">
-              <a href="#">Show all notifications</a>
-            </li>
-
-          </ul><!-- End Notification Dropdown Items -->
-
-        </li><!-- End Notification Nav -->
-
-        <li class="nav-item dropdown">
-
-          <a class="nav-link nav-icon" href="#" data-bs-toggle="dropdown">
-            <i class="bi bi-chat-left-text"></i>
-            <span class="badge bg-success badge-number">3</span>
-          </a><!-- End Messages Icon -->
-
-          <ul class="dropdown-menu dropdown-menu-end dropdown-menu-arrow messages">
-            <li class="dropdown-header">
-              You have 3 new messages
-              <a href="#"><span class="badge rounded-pill bg-primary p-2 ms-2">View all</span></a>
-            </li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="message-item">
-              <a href="#">
-                <img src="/static/img/messages-1.jpg" alt="" class="rounded-circle">
-                <div>
-                  <h4>Maria Hudson</h4>
-                  <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                  <p>4 hrs. ago</p>
-                </div>
-              </a>
-            </li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="message-item">
-              <a href="#">
-                <img src="/static/img/messages-2.jpg" alt="" class="rounded-circle">
-                <div>
-                  <h4>Anna Nelson</h4>
-                  <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                  <p>6 hrs. ago</p>
-                </div>
-              </a>
-            </li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="message-item">
-              <a href="#">
-                <img src="/static/img/messages-3.jpg" alt="" class="rounded-circle">
-                <div>
-                  <h4>David Muldon</h4>
-                  <p>Velit asperiores et ducimus soluta repudiandae labore officia est ut...</p>
-                  <p>8 hrs. ago</p>
-                </div>
-              </a>
-            </li>
-            <li>
-              <hr class="dropdown-divider">
-            </li>
-
-            <li class="dropdown-footer">
-              <a href="#">Show all messages</a>
-            </li>
-
-          </ul><!-- End Messages Dropdown Items -->
-
-        </li><!-- End Messages Nav -->
+        
 
         <li class="nav-item dropdown pe-3">
 
@@ -230,10 +91,7 @@
             </li>
 
             <li>
-              <a class="dropdown-item d-flex align-items-center" href="/profile">
-                <i class="bi bi-gear"></i>
-                <span>Account Settings</span>
-              </a>
+              
             </li>
             <li>
               <hr class="dropdown-divider">
@@ -361,10 +219,10 @@
               <h2>{{user.username}}</h2>
               <h3>{{user.email}}</h3>
               <div class="social-links mt-2">
-                <a href="#" class="twitter"><i class="bi bi-twitter"></i></a>
-                <a href="#" class="facebook"><i class="bi bi-facebook"></i></a>
-                <a href="#" class="instagram"><i class="bi bi-instagram"></i></a>
-                <a href="#" class="linkedin"><i class="bi bi-linkedin"></i></a>
+                <a href="{{user.twitter}}" class="twitter"><i class="bi bi-twitter"></i></a>
+                <a href="{{user.facebook}}" class="facebook"><i class="bi bi-facebook"></i></a>
+                <a href="{{user.instagram}}" class="instagram"><i class="bi bi-instagram"></i></a>
+                <a href="{{user.linkedin}}" class="linkedin"><i class="bi bi-linkedin"></i></a>
               </div>
             </div>
           </div>
@@ -442,24 +300,10 @@
                   <div class="row mb-3">
                       <label for="profileImage" class="col-md-4 col-lg-3 col-form-label">Profile Image</label>
                       <div class="col-md-8 col-lg-9">
-                          <div class="pt-2">
-                                  <input type="file" name="file">
-                                  <a href="/remove_profile_image" class="btn btn-danger btn-sm" title="Remove my profile image"><i class="bi bi-trash"></i> Remove</a>
-                          </div>
-
-                          <form action="{{ url_for('upload_image') }}" method="post" enctype="multipart/form-data" id="uploadForm">
-                            <div class="form-group">
+                          <div class="form-group">
                               <label for="file">Choose an image</label>
                               <input type="file" class="form-control-file" id="file" name="file" required>
-                            </div>
-                            <button type="submit" class="btn btn-primary btn-sm" title="Upload new profile image">
-                              <i class="bi bi-upload"></i> Upload
-                            </button>
-                          </form>
-                          <a href="{{ url_for('remove_profile_image') }}" class="btn btn-danger btn-sm" title="Remove my profile image">
-                            <i class="bi bi-trash"></i> Remove
-                          </a>
-
+                          </div>
                       </div>
                   </div>
                   <div class="row mb-3">
@@ -549,9 +393,13 @@
 
                
                 <div class="tab-pane fade pt-3" id="profile-change-password">
-                  <!-- Change Password Form -->
-                  <form action="{{ url_for('change_password') }}" method="POST">
+                  <!-- Message Container -->
+                  <div id="message-container" class="mb-3" style="display: none;">
+                    <div id="message" class="alert" role="alert"></div>
+                  </div>
                 
+                  <!-- Change Password Form -->
+                  <form id="change-password-form">
                     <div class="row mb-3">
                       <label for="currentPassword" class="col-md-4 col-lg-3 col-form-label">Current Password</label>
                       <div class="col-md-8 col-lg-9">
@@ -574,10 +422,11 @@
                     </div>
                 
                     <div class="text-center">
-                      <button type="submit" class="btn btn-primary">Change Password</button>
+                      <button type="button" class="btn btn-primary" onclick="changePassword()">Change Password</button>
                     </div>
-                  </form><!-- End Change Password Form -->
+                  </form>
                 </div>
+                
                 
 
               </div><!-- End Bordered Tabs -->
@@ -620,24 +469,53 @@
   <!-- Template Main JS File -->
   <script src="/static/js/main.js"></script>
 
-
   <script>
-    document.getElementById('uploadForm').onsubmit = async function(event) {
-      event.preventDefault();
-      let formData = new FormData(this);
-      let response = await fetch('{{ url_for("upload_image") }}', {
+    function changePassword() {
+    const currentPassword = document.getElementById('currentPassword').value;
+    const newPassword = document.getElementById('newPassword').value;
+    const renewPassword = document.getElementById('renewPassword').value;
+    
+    fetch('/change-password', {
         method: 'POST',
-        body: formData
-      });
-      let result = await response.json();
-      if (result.success) {
-        alert('Image uploaded successfully: ' + result.url);
-        // Update the profile image preview or perform other actions
-      } else {
-        alert('Image upload failed: ' + result.error);
-      }
-    };
-</script>
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+            currentPassword: currentPassword,
+            newPassword: newPassword,
+            renewPassword: renewPassword
+        })
+    })
+    .then(response => response.json().then(data => ({ status: response.status, body: data })))
+    .then(responseData => {
+        const messageContainer = document.getElementById('message-container');
+        const message = document.getElementById('message');
+        messageContainer.style.display = 'block';
+        if (responseData.status >= 200 && responseData.status < 300) {
+            message.classList.remove('alert-danger');
+            message.classList.add('alert-success');
+            message.innerText = responseData.body.message;
+            window.location.reload();
+        } else {
+            message.classList.remove('alert-success');
+            message.classList.add('alert-danger');
+            message.innerText = responseData.body.message;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        const messageContainer = document.getElementById('message-container');
+        const message = document.getElementById('message');
+        messageContainer.style.display = 'block';
+        message.classList.remove('alert-success');
+        message.classList.add('alert-danger');
+        message.innerText = 'An error occurred. Please try again.';
+    });
+}
+  
+  </script>
+
+ 
 </body>
 
 </html>

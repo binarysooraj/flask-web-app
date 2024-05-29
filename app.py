@@ -34,6 +34,7 @@ db = client['demo']
 users_collection = db['users']
 posts_collection = db['posts']
 stocks_collection = db['stocks']
+stocks_history_collection = db['stock_history']
 
 posts = []
 
@@ -111,6 +112,7 @@ def create_plot():
 def index():
     if 'user' in session:
             user = session['user']
+            print(user)
             # Fetch user's posts from the database
             # user_posts = posts_collection.find({'user_id': user['_id']})
             plot = create_plot()
@@ -140,7 +142,9 @@ def purchase_stock():
 
     # Deduct the total charges from the user's wallet
     new_wallet_balance = user['wallet'] - total_charges
-    users_collection.update_one({'uid': session['user']['uid']}, {'$set': {'wallet': new_wallet_balance}})
+    new_total_purchase = user['total_purchase'] + total_charges
+    users_collection.update_one({'uid': session['user']['uid']}, {'$set': {'wallet': new_wallet_balance, 'total_purchase': new_total_purchase}})
+    
     
     date_of_purchase = datetime.now().strftime('%Y-%m-%d')
 
@@ -157,6 +161,18 @@ def purchase_stock():
         'type':'purchase'
     }
     stocks_collection.insert_one(stock_purchase)
+    stocks_history_collection.insert_one(stock_purchase)
+    
+    user = session['user']
+    updated_fields = {  
+        'wallet': new_wallet_balance,
+        'total_purchase': new_total_purchase
+    }
+
+    # Update user details in the session
+    for key, value in updated_fields.items():
+        user[key] = value
+    session['user'] = user
 
     return jsonify({"message": "Stocks purchased successfully"})
 
@@ -261,7 +277,16 @@ def history():
             user = session['user']
             # Fetch user's posts from the database
             # user_posts = posts_collection.find({'user_id': user['_id']})
-            return render_template('history-data.html', user=user)
+            # Fetch stocks data for the logged-in user
+            user_stocks = stocks_history_collection.find({'uid': user['uid']})
+            
+            # Prepare result list to store filtered stocks data
+            result = []
+
+            for stock in user_stocks:
+                stock['_id'] = str(stock['_id'])  # Convert ObjectId to string
+                result.append(stock)
+            return render_template('history-data.html', user=user, stocks=result)
     else:
             return redirect(url_for('signin'))
     
@@ -288,9 +313,6 @@ def learn():
     else:
             return redirect(url_for('signin'))
     
-
-
-
 
 
 
@@ -370,7 +392,9 @@ def signup():
                 'password': hashed_password,
                 'city': '.............',
                 'country': '.............',
-                'wallet': 50000
+                'wallet': 50000,
+                'total_purchase':0,
+                'total_sold':0
             })
             return redirect(url_for('signin'))
 
@@ -391,6 +415,9 @@ def signin():
             # Store user details and token in session
             session['user'] = {
                 'uid': user['uid'],
+                'image_url': user['image_url'],
+                'total_sold': user['total_sold'],
+                'total_purchase': user['total_purchase'],
                 'username': user['username'],
                 'email': user['email'],
                 'contact': user['contact'],
@@ -398,6 +425,10 @@ def signin():
                 'city': user['city'],
                 'country': user['country'],
                 'wallet': user['wallet'],
+                'linkedin': user['linkedin'],
+                'twitter': user['twitter'],
+                'instagram': user['instagram'],
+                'facebook': user['facebook'],
                 'access_token': access_token
             }
             return redirect(url_for('dashboard'))
@@ -410,10 +441,6 @@ def signin():
 def dashboard():
     # Check if user is logged in
     if 'user' in session:
-        user = session['user']
-        if request.method == 'POST':
-            # Create post logic
-            pass
         return redirect(url_for('index'))
     else:
         return redirect(url_for('signin'))
@@ -440,36 +467,36 @@ def signout():
 
 @app.route('/change-password', methods=['POST'])
 def change_password():
-    if 'user' in session:
-        user = session['user']
-        current_password = request.form['currentPassword']
-        new_password = request.form['newPassword']
-        renew_password = request.form['renewPassword']
+    if 'user' not in session:
+        return jsonify({"message": "You need to log in to change your password"}), 401
 
-        # Fetch user from the database
-        db_user = users_collection.find_one({'uid': user['uid']})
+    user = session['user']
+    current_password = request.json['currentPassword']
+    new_password = request.json['newPassword']
+    renew_password = request.json['renewPassword']
 
-        # Check if current password is correct
-        if not bcrypt.check_password_hash(db_user['password'], current_password):
-            return "Current password is incorrect", 401
+    # Fetch user from the database
+    db_user = users_collection.find_one({'uid': user['uid']})
 
-        # Check if new passwords match
-        if new_password != renew_password:
-            return "New passwords do not match", 400
+    # Check if current password is correct
+    if not bcrypt.check_password_hash(db_user['password'], current_password):
+        return jsonify({"message": "Current password is incorrect"}), 401
 
-        # Hash new password
-        hashed_new_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
+    # Check if new passwords match
+    if new_password != renew_password:
+        return jsonify({"message": "New passwords do not match"}), 400
 
-        # Update user's password in the database
-        users_collection.update_one(
-            {'uid': user['uid']},
-            {'$set': {'password': hashed_new_password}}
-        )
+    # Hash new password
+    hashed_new_password = bcrypt.generate_password_hash(new_password).decode('utf-8')
 
-        return redirect(url_for('profile'))
+    # Update user's password in the database
+    users_collection.update_one(
+        {'uid': user['uid']},
+        {'$set': {'password': hashed_new_password}}
+    )
 
-    else:
-        return redirect(url_for('signin'))
+    return jsonify({"message": "Password successfully changed"}), 200
+
 
 
 
@@ -489,7 +516,6 @@ def update_profile():
             'country': request.form['country'],
             'address': request.form['address'],
             'contact': request.form['phone'],
-            'email': request.form['email'],
             'twitter': request.form['twitter'],
             'facebook': request.form['facebook'],
             'instagram': request.form['instagram'],
@@ -507,9 +533,6 @@ def update_profile():
         return redirect(url_for('profile'))
     else:
         return redirect(url_for('signin'))
-
-
-
 
 
 
@@ -577,8 +600,6 @@ def sell_stock():
 
     # Check if the user has the stock in their possession
     user_stock = stocks_collection.find_one({'_id': ObjectId(id)})
-    print("Current stocks collection:")    
-    print(user_stock)
     if not user_stock:
         return jsonify({"message": "User does not possess this stock"}), 400
 
@@ -592,10 +613,14 @@ def sell_stock():
 
     # Update the user's wallet balance
     new_wallet_balance = user['wallet'] + total_charges
+    new_total_sold = user['total_sold'] + total_charges
 
-    users_collection.update_one({'uid': session['user']['uid']}, {'$set': {'wallet': new_wallet_balance}})
+    users_collection.update_one({'uid': session['user']['uid']}, {'$set': {'wallet': new_wallet_balance, 'total_sold': new_total_sold}})
     # Update the volume of the sold stock in the stocks collection
     new_volume = int(user_stock['volume']) - int(number_of_stocks)
+    user_stock['type'] = "sell"
+    stocks_history_collection.insert_one(user_stock)
+
     if new_volume > 0:
             stocks_collection.update_one(
                 {'uid': session['user']['uid'], 'stock_index': stock_index},
@@ -603,31 +628,21 @@ def sell_stock():
             )
     else:
             stocks_collection.delete_one({'uid': session['user']['uid'], 'stock_index': stock_index})
+    
+    user = session['user']
+    updated_fields = {  
+        'wallet': new_wallet_balance,
+        'total_sold': new_total_sold
+    }
 
-    return jsonify({"message": "Stocks sold successfully"})
+    # Update user details in the session
+    for key, value in updated_fields.items():
+        user[key] = value
+    session['user'] = user
+
+    return jsonify({"message": "Stocks sold successfully"}), 200
 
 
-
-@app.route('/upload_image', methods=['POST'])
-def upload_image():
-    try:
-        if 'file' not in request.files:
-            return jsonify({'success': False, 'error': 'No file part in the request'}), 400
-
-        file = request.files['file']
-
-        if file.filename == '':
-            return jsonify({'success': False, 'error': 'No selected file'}), 400
-
-        if file:
-            # Upload the image to Cloudinary
-            upload_result = cloudinary.uploader.upload(file)
-            # Get the URL of the uploaded image
-            image_url = upload_result['url']
-            return jsonify({'success': True, 'url': image_url}), 200
-
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0")
