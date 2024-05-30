@@ -1,44 +1,49 @@
-import joblib
-from keras.models import load_model
-import pandas as pd
+# forecast.py
 import pickle
+import pandas as pd
 import numpy as np
 
-# Constants
-TIME_STEP = 60
+MODELS_SAVE_PATH = 'model_files/garch_models.pkl'
 
-# Predict for a specific date
-def forecast(specific_date):
-  specific_date_timestamp = pd.Timestamp(specific_date)
+def load_models(file_path):
+    with open(file_path, 'rb') as file:
+        models = pickle.load(file)
+    return models
 
-  close_prices_df = pd.read_csv('model_files/51_stock_data.csv')
-  close_prices_df.index = pd.to_datetime(close_prices_df.iloc[:, 0], errors='coerce')
-  close_prices_df = close_prices_df.iloc[:, 1:]
+def extract_close_prices(stock_data):
+    close_prices = pd.DataFrame(index=pd.to_datetime([]))
+    for symbol, data in stock_data.items():
+        prices = [float(data[date]["4. close"]) for date in data]
+        dates = list(data.keys())
+        symbol_df = pd.DataFrame(prices, index=pd.to_datetime(dates), columns=[symbol])
+        close_prices = pd.concat([close_prices, symbol_df], axis=1)
+    return close_prices
 
-  scaler = joblib.load('model_files/scaler.pkl')
-  scaled_data = scaler.transform(close_prices_df)
+def forecast_price_for_specific_date(symbol, model_fit, last_price, forecast_horizon):
+    forecast = model_fit.forecast(horizon=forecast_horizon)
+    predicted_volatility = forecast.variance[-1:].values.flatten()
+    predicted_returns = np.random.normal(0, np.sqrt(predicted_volatility), forecast_horizon)
+    predicted_price = last_price * (1 + predicted_returns / 100).cumprod()
+    return predicted_price
 
-  # Load the model
-  model = load_model('model_files/lstm_model.h5')
+def predict_specific_date(stock_data, specific_date, models_path=MODELS_SAVE_PATH):
+    models = load_models(models_path)
+    close_prices_df = extract_close_prices(stock_data)
 
-  steps_ahead = (specific_date_timestamp - close_prices_df.index[-1]).days  # Number of days ahead
+    specific_date_timestamp = pd.Timestamp(specific_date)
+    days_to_specific_date = (specific_date_timestamp - close_prices_df.index[-1]).days
 
-  if steps_ahead < 0:
-      print(f"The specific date {specific_date} is in the past relative to the last available date in the dataset.")
-  else:
-      input_data = scaled_data[-TIME_STEP:]
-      for step in range(steps_ahead):
-          input_data_reshaped = input_data.reshape(1, TIME_STEP, -1)
-          predicted_scaled = model.predict(input_data_reshaped)
-          predicted_price = scaler.inverse_transform(predicted_scaled)
+    if days_to_specific_date > 0:
+        specific_date_predicted_prices = {}
 
-          # Append the predicted data to input_data for the next prediction
-          next_input = predicted_scaled[0]
-          input_data = np.vstack([input_data[1:], next_input])
+        for symbol in close_prices_df.columns:
+            if symbol in models:
+                last_price = close_prices_df[symbol].iloc[-1]
+                forecast_horizon = days_to_specific_date
+                predicted_prices_for_symbol = forecast_price_for_specific_date(
+                    symbol, models[symbol], last_price, forecast_horizon)
+                specific_date_predicted_prices[symbol] = predicted_prices_for_symbol[-1]
 
-      # The final predicted price after iterating through steps_ahead
-      print(f"Predicted Price for {specific_date}: {predicted_price[0]}")
-      return predicted_price
-
-# result = forecast("2024-05-17")
-# print(result)
+        return specific_date_predicted_prices
+    else:
+        raise ValueError(f"Cannot predict for {specific_date} as it is in the past or too close to the last date in the dataset.")

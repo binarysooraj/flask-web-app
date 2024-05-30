@@ -11,7 +11,7 @@ import cloudinary
 import cloudinary.uploader
 import cloudinary.api
 import certifi
-from predict import forecast
+from predict import predict_specific_date
 from datetime import date
 import json
 import json
@@ -230,6 +230,9 @@ def predict():
     data = request.get_json()
     stock_index = data.get('stockIndex')
     date = data.get('date')
+
+    with open('model_files/51_stocks_data.json', 'r') as file:
+        data = json.load(file)
     
     # Ensure the date is in the correct format and valid
     try:
@@ -238,12 +241,20 @@ def predict():
         return jsonify({"error": "Invalid date format. Use YYYY-MM-DD."}), 400
     
     # Call your forecasting function with the provided date
-    predictions = forecast(date)
+    prediction_dict = specific_date_predicted_prices = predict_specific_date(data, date)
+
+    predictions = []
+
+    for symbol, price in prediction_dict.items():
+        print(f"{symbol}: {price}")
+        predictions.append(price)
+
+    print(predictions)
     
     # Ensure the predictions are in a list format
     predictions = predictions.tolist() if hasattr(predictions, 'tolist') else predictions
     
-    return jsonify(predictions=predictions)
+    return jsonify(predictions=[predictions])
 
 
 @app.route('/calculate_risk', methods=['POST'])
@@ -254,8 +265,23 @@ def calculate_risk():
     purchase_price = data.get('purchasePrice')
 
     # Assuming you have a function forecast that retrieves current prices
-    current_prices = forecast(date)
-    current_price = current_prices[0][index]
+
+    with open('model_files/51_stocks_data.json', 'r') as file:
+        data = json.load(file)
+
+    prediction_dict = specific_date_predicted_prices = predict_specific_date(data, date)
+
+    current_prices = []
+
+    for symbol, price in prediction_dict.items():
+        print(f"{symbol}: {price}")
+        current_prices.append(price)
+
+    print(current_prices)
+
+
+    # current_prices = forecast(date)
+    current_price = current_prices[index]
     
     try:
         # Convert purchase_price to float if it's not already
